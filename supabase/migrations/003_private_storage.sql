@@ -64,8 +64,9 @@ CREATE POLICY "Merchandisers can read all production photos"
 
 -- Policy: Supervisors can SELECT photos for orders in their production unit
 -- The photo path format is: production/{order_id}/{filename}
--- We extract the order_id from the name (path) and check if the order
--- belongs to the supervisor's production unit.
+-- We match the order_id from the storage path using a LIKE pattern and
+-- check if the order belongs to the supervisor's production unit.
+-- Note: storage.foldername() returns text[] so we use LIKE matching instead.
 DROP POLICY IF EXISTS "Supervisors can read photos for their unit orders" ON storage.objects;
 CREATE POLICY "Supervisors can read photos for their unit orders"
   ON storage.objects FOR SELECT
@@ -80,12 +81,7 @@ CREATE POLICY "Supervisors can read photos for their unit orders"
       AND EXISTS (
         SELECT 1 FROM public.orders o
         WHERE o.production_unit_id = p.production_unit_id
-        AND (
-          -- Match the order_id extracted from the storage path
-          -- Path format: production/{order_id}/{filename}
-          storage.foldername(name) = o.id::text
-          OR name LIKE 'production/' || o.id::text || '/%'
-        )
+        AND name LIKE 'production/' || o.id::text || '/%'
       )
     )
   );

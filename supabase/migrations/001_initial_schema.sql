@@ -2,8 +2,8 @@
 -- StitchOps Initial Schema Migration
 -- ============================================================
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- gen_random_uuid() is built into PostgreSQL 13+ (Supabase uses PG 15+)
+-- No extension needed — uuid-ossp was only required for uuid_generate_v4()
 
 -- ─── PROFILES ─────────────────────────────────────────────
 CREATE TABLE profiles (
@@ -19,7 +19,7 @@ CREATE TABLE profiles (
 
 -- ─── BUYERS ───────────────────────────────────────────────
 CREATE TABLE buyers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   country TEXT NOT NULL,
   contact_name TEXT,
@@ -29,7 +29,7 @@ CREATE TABLE buyers (
 
 -- ─── PRODUCTION UNITS ─────────────────────────────────────
 CREATE TABLE production_units (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   location TEXT NOT NULL,
   capacity_per_day INTEGER NOT NULL DEFAULT 500,
@@ -45,7 +45,7 @@ ALTER TABLE profiles
 
 -- ─── ORDERS ───────────────────────────────────────────────
 CREATE TABLE orders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   po_number TEXT NOT NULL UNIQUE,
   buyer_id UUID NOT NULL REFERENCES buyers(id),
   style_name TEXT NOT NULL,
@@ -77,7 +77,7 @@ CREATE INDEX idx_orders_risk ON orders(risk_status);
 
 -- ─── ORDER ITEMS (colour/size matrix) ─────────────────────
 CREATE TABLE order_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   colour TEXT NOT NULL,
   size TEXT NOT NULL,
@@ -88,14 +88,14 @@ CREATE INDEX idx_items_order ON order_items(order_id);
 
 -- ─── TNA TEMPLATES ────────────────────────────────────────
 CREATE TABLE tna_templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   created_by UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE tna_template_milestones (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id UUID NOT NULL REFERENCES tna_templates(id) ON DELETE CASCADE,
   stage TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE tna_template_milestones (
 
 -- ─── ORDER MILESTONES ─────────────────────────────────────
 CREATE TABLE order_milestones (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   stage TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -124,7 +124,7 @@ CREATE INDEX idx_milestones_stage ON order_milestones(stage);
 
 -- ─── MILESTONE DATE CHANGE HISTORY ────────────────────────
 CREATE TABLE milestone_date_change_history (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   milestone_id UUID NOT NULL REFERENCES order_milestones(id),
   order_id UUID NOT NULL REFERENCES orders(id),
   previous_date DATE NOT NULL,
@@ -139,7 +139,7 @@ CREATE INDEX idx_date_history_milestone ON milestone_date_change_history(milesto
 
 -- ─── PRODUCTION UPDATES ───────────────────────────────────
 CREATE TABLE production_updates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id UUID NOT NULL UNIQUE,  -- for idempotent offline sync
   order_id UUID NOT NULL REFERENCES orders(id),
   milestone_id UUID REFERENCES order_milestones(id),
@@ -165,7 +165,7 @@ CREATE INDEX idx_updates_review ON production_updates(ai_needs_review) WHERE ai_
 
 -- ─── AI CLASSIFICATIONS ───────────────────────────────────
 CREATE TABLE ai_classifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID REFERENCES orders(id),
   original_note TEXT NOT NULL,
   english_translation TEXT NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE ai_classifications (
 
 -- ─── BUYER ACCESS TOKENS ──────────────────────────────────
 CREATE TABLE buyer_access_tokens (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   buyer_id UUID NOT NULL REFERENCES buyers(id),
   token_hash TEXT NOT NULL UNIQUE,  -- only SHA-256 hash stored, never plain token
   label TEXT,
@@ -192,7 +192,7 @@ CREATE INDEX idx_tokens_buyer ON buyer_access_tokens(buyer_id);
 
 -- ─── NOTIFICATIONS ────────────────────────────────────────
 CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
@@ -206,7 +206,7 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, read);
 
 -- ─── ACTIVITY LOGS ────────────────────────────────────────
 CREATE TABLE activity_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id),
   order_id UUID REFERENCES orders(id),
   action TEXT NOT NULL,
