@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardKPIs } from '@/components/dashboard/dashboard-kpis'
@@ -14,12 +14,17 @@ export const instant = false
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // Explicitly get user to ensure auth.uid() is resolved before RLS-gated queries
+  // Ensure auth.uid() is resolved before RLS-gated queries run
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   // Fetch all data needed for dashboard in parallel.
-  // limit(100) ensures all 7-day updates reach the client (18 rows for 3 orders × 6 working days).
+  //
+  // IMPORTANT: production_updates has TWO foreign keys to profiles:
+  //   - supervisor_id (the actual supervisor)
+  //   - ai_corrected_by (the merchandiser who corrected the AI)
+  // PostgREST raises PGRST201 (ambiguous embed) without an explicit FK hint.
+  // We use the !<fk_name> hint to specify which FK to follow for the join.
   const [ordersResult, updatesResult] = await Promise.all([
     supabase
       .from('orders')
@@ -28,7 +33,7 @@ export default async function DashboardPage() {
       .order('ex_factory_date', { ascending: true }),
     supabase
       .from('production_updates')
-      .select('*, supervisor:profiles(full_name)')
+      .select('*, supervisor:profiles!production_updates_supervisor_id_fkey(full_name)')
       .order('update_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(100),
@@ -87,4 +92,3 @@ export default async function DashboardPage() {
     </div>
   )
 }
-

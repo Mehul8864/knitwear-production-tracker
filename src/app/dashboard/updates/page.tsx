@@ -13,7 +13,7 @@ export default async function UpdatesPage() {
   const [updatesResult, reviewResult] = await Promise.all([
     supabase
       .from('production_updates')
-      .select('*, supervisor:profiles(full_name), order:orders(po_number)')
+      .select('*, supervisor:profiles!production_updates_supervisor_id_fkey(full_name), order:orders(po_number)')
       .order('created_at', { ascending: false })
       .limit(50),
     supabase

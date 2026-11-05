@@ -34,7 +34,7 @@ export default async function OrderDetailPage({ params }: Props) {
         .order('sort_order'),
       supabase
         .from('production_updates')
-        .select('*, supervisor:profiles(full_name)')
+        .select('*, supervisor:profiles!production_updates_supervisor_id_fkey(full_name)')
         .eq('order_id', id)
         .order('update_date', { ascending: false }),
       supabase
