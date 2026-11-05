@@ -40,6 +40,11 @@ yarn-error.log*
 # Allow the example (no secrets)
 !.env.example
 
+# Submission artifacts
+StitchOps_Submission_*.zip
+TDD.html
+TDD.pdf
+
 # vercel
 .vercel
 
