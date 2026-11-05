@@ -40,6 +40,9 @@ yarn-error.log*
 # Allow the example (no secrets)
 !.env.example
 
+# Supabase CLI local state — never commit
+supabase/.temp/
+
 # Submission artifacts
 StitchOps_Submission_*.zip
 TDD.html
