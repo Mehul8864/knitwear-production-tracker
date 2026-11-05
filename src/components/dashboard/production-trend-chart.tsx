@@ -22,21 +22,36 @@ interface ProductionTrendChartProps {
 
 export function ProductionTrendChart({ updates }: ProductionTrendChartProps) {
   const chartData = useMemo(() => {
-    // Build 7-day rolling data
+    // Build 7-day rolling window from today backwards.
+    // Use UTC dates throughout to avoid timezone shift issues.
+    // update_date is a Supabase DATE column returned as 'YYYY-MM-DD' string.
     const days: { date: string; label: string; quantity: number }[] = []
+
+    // Anchor to today's date in UTC (avoids local timezone shifting the date)
+    const nowUtc = new Date()
+    const todayUtc = new Date(Date.UTC(nowUtc.getFullYear(), nowUtc.getMonth(), nowUtc.getDate()))
+
     for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      d.setHours(0, 0, 0, 0)
-      const dateStr = d.toISOString().split('T')[0]
+      const d = new Date(todayUtc)
+      d.setUTCDate(d.getUTCDate() - i)
+      const dateStr = d.toISOString().split('T')[0]   // always 'YYYY-MM-DD' in UTC
+
       const qty = updates
-        .filter((u) => u.update_date?.startsWith(dateStr))
+        .filter((u) => {
+          // update_date: plain DATE string '2026-11-05'
+          // created_at: TIMESTAMPTZ '2026-11-05T17:19:27.067187+00:00'
+          const updateDateStr = u.update_date
+            ? String(u.update_date).slice(0, 10)
+            : u.created_at
+            ? String(u.created_at).slice(0, 10)
+            : null
+          return updateDateStr === dateStr
+        })
         .reduce((sum, u) => sum + (u.quantity_completed ?? 0), 0)
-      days.push({
-        date: dateStr,
-        label: formatDate(d).split(' ').slice(0, 2).join(' '),
-        quantity: qty,
-      })
+
+      // Label uses the UTC date value to stay consistent with dateStr
+      const label = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })
+      days.push({ date: dateStr, label, quantity: qty })
     }
     return days
   }, [updates])

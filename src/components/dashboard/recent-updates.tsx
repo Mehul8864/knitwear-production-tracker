@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { StageBadge } from '@/components/ui/badge'
-import { formatDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import type { ProductionUpdate } from '@/types/database'
 
 interface RecentUpdatesProps {
@@ -31,7 +31,7 @@ export function RecentUpdates({ updates }: RecentUpdatesProps) {
                     </span>
                   </div>
                   <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    By {(update.supervisor as { full_name: string } | null)?.full_name ?? 'Supervisor'} · {formatDateTime(update.created_at)}
+                    By {(update.supervisor as { full_name: string } | null)?.full_name ?? 'Supervisor'} · {formatDate(update.update_date ?? update.created_at)}
                   </p>
                   {update.issue_note_english && (
                     <p className="text-xs text-amber-700 mt-1 truncate">

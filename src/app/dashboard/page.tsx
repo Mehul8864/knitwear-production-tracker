@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardKPIs } from '@/components/dashboard/dashboard-kpis'
 import { EarlyWarningPanel } from '@/components/dashboard/early-warning-panel'
@@ -13,7 +14,12 @@ export const instant = false
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // Fetch all data needed for dashboard in parallel
+  // Explicitly get user to ensure auth.uid() is resolved before RLS-gated queries
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // Fetch all data needed for dashboard in parallel.
+  // limit(100) ensures all 7-day updates reach the client (18 rows for 3 orders × 6 working days).
   const [ordersResult, updatesResult] = await Promise.all([
     supabase
       .from('orders')
@@ -24,7 +30,8 @@ export default async function DashboardPage() {
       .from('production_updates')
       .select('*, supervisor:profiles(full_name)')
       .order('update_date', { ascending: false })
-      .limit(10),
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   const orders = ordersResult.data ?? []
