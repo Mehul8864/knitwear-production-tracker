@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { StageBadge, Badge } from '@/components/ui/badge'
+import { SecurePhoto } from '@/components/photos/secure-photo'
 import { formatDateTime, formatDate } from '@/lib/utils'
 import type { ProductionUpdate } from '@/types/database'
 
@@ -100,20 +101,13 @@ export function UpdateHistoryList({ updates }: UpdateHistoryListProps) {
                   {/* Photos */}
                   {update.photo_urls?.length > 0 && (
                     <div className="flex gap-2 mt-3 flex-wrap">
-                      {update.photo_urls.map((url, i) => (
-                        <a
+                      {update.photo_urls.map((photoPath, i) => (
+                        <SecurePhoto
                           key={i}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block w-16 h-16 rounded-lg overflow-hidden border border-[var(--border)] hover:opacity-80 transition-opacity"
-                        >
-                          <img
-                            src={url}
-                            alt={`Production photo ${i + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </a>
+                          src={photoPath}
+                          alt={`Production photo ${i + 1}`}
+                          className="w-16 h-16 rounded-lg object-cover border border-[var(--border)] hover:opacity-80 transition-opacity"
+                        />
                       ))}
                     </div>
                   )}

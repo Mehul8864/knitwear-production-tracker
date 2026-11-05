@@ -109,6 +109,7 @@ export default async function BuyerPortalPage({ params }: Props) {
       milestones={milestones ?? []}
       updates={updates ?? []}
       dateHistory={dateHistory ?? []}
+      buyerToken={token}
     />
   )
 }

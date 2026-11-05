@@ -55,11 +55,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { data: urlData } = supabase.storage
-      .from('production-photos')
-      .getPublicUrl(path)
-
-    return NextResponse.json({ url: urlData.publicUrl, path }, { status: 201 })
+    // Return the STORAGE PATH (not a public URL).
+    // The frontend will request a signed URL via /api/photos/signed-url.
+    // This ensures the private bucket is never exposed via public URLs.
+    return NextResponse.json({ path, url: path }, { status: 201 })
   } catch (error) {
     console.error('Photo upload error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

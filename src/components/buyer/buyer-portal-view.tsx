@@ -8,6 +8,7 @@ import { formatDate, percentage, formatNumber } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Globe, Package, Calendar, CheckCircle2, Circle, ArrowRight, Clock } from 'lucide-react'
 import type { OrderMilestone } from '@/types/database'
+import { BuyerSecurePhoto } from '@/components/photos/buyer-secure-photo'
 
 interface BuyerOrder {
   id: string
@@ -55,6 +56,7 @@ interface BuyerPortalViewProps {
   milestones: OrderMilestone[]
   updates: BuyerUpdate[]
   dateHistory: BuyerDateHistory[]
+  buyerToken: string
 }
 
 export function BuyerPortalView({
@@ -63,6 +65,7 @@ export function BuyerPortalView({
   milestones,
   updates,
   dateHistory,
+  buyerToken,
 }: BuyerPortalViewProps) {
   const totalQty = orders.reduce((s, o) => s + o.total_quantity, 0)
   const totalCompleted = orders.reduce((s, o) => s + o.completed_quantity, 0)
@@ -236,14 +239,14 @@ export function BuyerPortalView({
                           <p className="text-sm text-[var(--text-muted)]">No photos yet</p>
                         ) : (
                           <div className="grid grid-cols-3 gap-2">
-                            {photos.map((url, i) => (
-                              <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                                <img
-                                  src={url}
-                                  alt={`Production photo ${i + 1}`}
-                                  className="w-full aspect-square object-cover rounded-xl border border-[var(--border)]"
-                                />
-                              </a>
+                            {photos.map((photoPath, i) => (
+                              <BuyerSecurePhoto
+                                key={i}
+                                src={photoPath}
+                                token={buyerToken}
+                                alt={`Production photo ${i + 1}`}
+                                className="w-full aspect-square object-cover rounded-xl border border-[var(--border)]"
+                              />
                             ))}
                           </div>
                         )}

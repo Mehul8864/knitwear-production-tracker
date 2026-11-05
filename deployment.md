@@ -43,7 +43,8 @@ npm install
 2. Note your **Project URL** and **anon key** (Settings → API)
 3. Note your **service role key** (Settings → API → Project API keys)
 4. In Supabase dashboard → Storage → Create a bucket named `production-photos`
-   - Set bucket to **Public**
+   - Set bucket to **PRIVATE** (not public) — production photographs must remain private
+   - Photo access is handled via server-generated signed URLs only
 
 ---
 
@@ -54,6 +55,7 @@ In your Supabase project, open the **SQL Editor** and run these files in order:
 ```
 supabase/migrations/001_initial_schema.sql
 supabase/migrations/002_rls_policies.sql
+supabase/migrations/003_private_storage.sql
 supabase/seed.sql
 ```
 
@@ -123,7 +125,7 @@ Open http://localhost:3000
 npm test
 ```
 
-Runs 36 unit tests covering the run-rate engine, utility functions, and AI schema validation.
+Runs 71 unit tests covering the run-rate engine, utility functions, AI schema validation, and photo access authorization including buyer data isolation.
 
 ---
 
@@ -147,11 +149,26 @@ npm run start
 
 ## 11. Supabase Storage Configuration
 
-After creating the `production-photos` bucket:
+After creating the `production-photos` bucket as **PRIVATE**:
 
 1. Go to Storage → Policies
-2. Add policy: allow `INSERT` for authenticated users
-3. Add policy: allow `SELECT` for authenticated users
+2. The migration `003_private_storage.sql` automatically sets up these policies:
+   - **INSERT**: Only authenticated merchandisers and supervisors can upload
+   - **SELECT (merchandisers)**: Merchandisers can read all production photos
+   - **SELECT (supervisors)**: Supervisors can only read photos for orders in their production unit
+   - **DELETE**: Only the original uploader can delete their photos
+   - **No anonymous/public access**: Buyers never access storage directly
+3. Buyers receive **signed URLs** (60-second expiry) generated server-side after token and order ownership validation
+4. No public URLs are ever generated for production photographs
+
+### Signed URL Flow
+
+```
+Merchandiser/Supervisor → /api/photos/signed-url → validates auth + role + order ownership → returns 60s signed URL
+Buyer (via token link) → /api/photos/buyer-signed-url → validates token + expiry + order ownership → returns 60s signed URL
+```
+
+Both endpoints reject cross-buyer access. Company B cannot access Company C photos and vice versa.
 
 ---
 
@@ -200,7 +217,14 @@ Run `npm run type-check` to identify the error. All known type errors are fixed.
 Set `OPENAI_API_KEY` in `.env.local`. The app works fully without AI (manual mode).
 
 ### Storage upload fails
-Check that the `production-photos` bucket exists and storage policies are configured.
+Check that the `production-photos` bucket exists and is set to **PRIVATE**. Run migration `003_private_storage.sql` to set up storage RLS policies.
+
+### Photos not displaying (signed URL errors)
+Signed URLs expire after 60 seconds. If photos aren't loading:
+1. Check the browser console for 403 errors from `/api/photos/signed-url`
+2. Verify the user is authenticated
+3. For buyers, verify the buyer token is valid and not expired
+4. Check Supabase logs for storage permission errors
 
 ### RLS blocking queries
 Ensure migration `002_rls_policies.sql` has been applied. Check Supabase logs for policy violations.

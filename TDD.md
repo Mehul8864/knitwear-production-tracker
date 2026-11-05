@@ -135,7 +135,7 @@ Next.js Server (Vercel Edge / Node)
 Supabase Cloud
 ├── PostgreSQL — production data + Row Level Security
 ├── Auth — JWT sessions, user management
-└── Storage — production photographs
+└── Storage — production photographs (PRIVATE bucket, signed URLs only)
         │
         ▼
 OpenAI API
@@ -404,6 +404,15 @@ Supervisor opens update form
 - Buyers cannot see orders, styles, quantities, or photographs belonging to other buyers
 - Service role key is never in frontend code or API responses
 
+### Photo Isolation
+- Production photos are stored in a **PRIVATE** Supabase Storage bucket
+- No public URLs are ever generated — only short-lived signed URLs (60-second expiry)
+- Merchandisers receive signed URLs for all photos via `/api/photos/signed-url`
+- Supervisors receive signed URLs only for photos belonging to orders in their production unit
+- Buyers receive signed URLs only for photos belonging to their own orders via `/api/photos/buyer-signed-url`
+- The buyer signed URL endpoint validates the token, checks expiry/revocation, then verifies order ownership before generating the URL
+- Company B cannot access Company C's photos and vice versa — enforced both in application authorization and storage RLS policies
+
 ### Token Expiry and Revocation
 - Default expiry: 90 days
 - `revoked_at` timestamp allows instant revocation
@@ -455,7 +464,9 @@ All API routes use Next.js Route Handlers (`/api/*/route.ts`):
 | `/api/updates` | POST | Submit production update (idempotent) |
 | `/api/updates/[id]/correct-category` | PATCH | Merchandiser corrects AI category |
 | `/api/milestones/[id]/date` | PATCH | Update milestone date with audit |
-| `/api/photos` | POST | Upload production photograph |
+| `/api/photos` | POST | Upload production photograph (returns storage path, not public URL) |
+| `/api/photos/signed-url` | POST | Generate 60s signed URL for authenticated users (merchandiser/supervisor) |
+| `/api/photos/buyer-signed-url` | POST | Generate 60s signed URL for buyers (validates token + order ownership) |
 | `/api/ai/classify` | POST | Classify issue note (Tamil/English) |
 | `/api/ai/transcribe` | POST | Transcribe voice note then classify |
 | `/api/buyer-tokens` | POST | Generate secure buyer access link |
@@ -480,6 +491,11 @@ Every route:
 | Buyer isolation | Token-scoped queries, never trust client-supplied buyer ID |
 | Token security | SHA-256 hash only stored; plain token returned once |
 | File upload safety | MIME type validation, 10MB limit, UUID filenames |
+| Private storage bucket | `production-photos` bucket is PRIVATE — no public URLs ever generated |
+| Signed URL access | 60-second expiry signed URLs generated server-side after authorization |
+| Photo authorization | Order ownership verified before generating any signed URL |
+| Buyer photo isolation | Buyer token + order ownership validated on every signed URL request |
+| Storage RLS policies | Merchandisers read all; supervisors read their unit's; buyers have no direct storage access |
 | Duplicate prevention | `client_id` UUID with UNIQUE constraint |
 | Audit trail | All date changes, AI corrections logged |
 
@@ -487,7 +503,7 @@ Every route:
 
 ## 22. Testing Strategy and Results
 
-### Unit Tests (36 tests — all passing)
+### Unit Tests (71 tests — all passing)
 ```
 src/lib/run-rate.test.ts     — 28 tests
   ✓ Working day detection (Mon–Sat)
@@ -513,9 +529,21 @@ src/lib/ai-schema.test.ts    — 7 tests
   ✓ Confidence range validation
   ✓ needsReview logic (< 0.75 threshold)
   ✓ Token generation (64-char hex, uniqueness)
+
+src/lib/photo-auth.test.ts   — 35 tests
+  ✓ Order ID extraction from storage paths
+  ✓ Storage path vs public URL detection
+  ✓ Buyer authorization for own orders
+  ✓ Company B BLOCKED from Company C photos
+  ✓ Company C BLOCKED from Company B photos (2 cases)
+  ✓ Supervisor authorization for unit orders
+  ✓ Supervisor BLOCKED from other unit's photos
+  ✓ Merchandiser full access to all photos
+  ✓ Legacy public URL backward compatibility (2 cases)
+  ✓ Invalid/empty input edge cases (5 cases)
 ```
 
-**Test results: 36/36 pass ✓**
+**Test results: 71/71 pass ✓**
 
 ---
 
@@ -532,7 +560,7 @@ Vercel
 Supabase
 ├── PostgreSQL (managed, with backups)
 ├── Auth (JWT, session management)
-└── Storage (S3-compatible, production-photos bucket)
+└── Storage (S3-compatible, PRIVATE production-photos bucket, signed URLs only)
 ```
 
 ---
@@ -594,7 +622,7 @@ Supabase
 | Supervisor mobile update form | ✅ Built |
 | Tamil support (text + voice) | ✅ Built |
 | Offline queue (IndexedDB + Dexie) | ✅ Built |
-| Photo upload (Supabase Storage) | ✅ Built |
+| Photo upload (Supabase Storage — PRIVATE) | ✅ Built |
 | AI classification (OpenAI) | ✅ Built |
 | Human AI correction | ✅ Built |
 | TNA calendar view | ✅ Built |
@@ -603,7 +631,9 @@ Supabase
 | PDF export | ✅ Built |
 | Excel export | ✅ Built |
 | Seed data (3 orders, real scenarios) | ✅ Built |
-| Unit tests (36 passing) | ✅ Built |
+| Photo signed URL access (private bucket) | ✅ Built |
+| Buyer photo isolation tests | ✅ Built |
+| Unit tests (71 passing) | ✅ Built |
 | Production build (clean) | ✅ Verified |
 | 20 meaningful Git commits | ✅ Done |
 | .env.example (no secrets) | ✅ Done |
