@@ -2,7 +2,7 @@
 
 **GitHub Repository:** https://github.com/Mehul8864/knitwear-production-tracker
 **Live Application:** https://stitchops-mehul8864.vercel.app
-**Version:** 1.0 (Production-Ready)
+**Version:** 2.0 (Production-Ready, Premium UI)
 **Date:** 6 November 2026
 **Author:** Mehul8864
 
@@ -423,34 +423,44 @@ Supervisor opens update form
 ## 19. UI/UX Design Decisions
 
 ### Design System
-- **Base colour:** Deep navy #17243A for primary actions, headers, sidebar
-- **Background:** Soft grey #F7F8FA for page backgrounds; white for card surfaces
-- **Status system:** Emerald green (on-track), Amber (at-risk), Red (delayed) — consistent across all components
-- **Typography:** Geist Sans (primary), Geist Mono (code/numbers)
-- **Shadows:** Subtle, single-layer — shadow-sm for cards, shadow-lg for modals
-- **Border radius:** 8px (inputs), 12px (cards), 16px (modals)
+The premium design system uses 80+ CSS custom properties in `globals.css`:
+
+- **Primary colour:** Deep midnight navy `#0f1e35` for sidebar, navigation, accent elements
+- **Backgrounds:** Soft off-white `#f5f6f8` base, white surfaces, `#f0f2f5` subtle overlays
+- **Status system:** Emerald green (on-track), Amber (at-risk), Red (delayed) with matching backgrounds and text colours for each
+- **Accent:** `#4f6ef7` indigo for interactive elements, focus rings, and highlights
+- **Typography:** Geist Sans (primary), Geist Mono (code/numbers), consistent weight and letter-spacing scale
+- **Shadows:** Multi-layer elevation system from xs to xl with navy-tinted shadows
+- **Border radius system:** 4px (xs) → 18px (xl) → pill variants
+- **Sidebar:** Navy background with translucent active states, role badge, user footer with sign-out
+- **Transitions:** Fast (100ms), Normal (150ms cubic), Slow (250ms cubic)
+
+All design tokens are declared as CSS custom properties consumed directly by component inline styles and Tailwind classes, ensuring visual consistency without a compiled design token build step.
 
 ### Key UX Decisions
-- Supervisor update form is single-page, large touch targets, no unnecessary fields
-- Language toggle (English/Tamil) on supervisor form with clear visual state
-- Online/offline indicator always visible to supervisor
-- Every warning explains WHY it is shown (not just what)
-- Empty states are helpful and actionable
-- Skeleton loaders instead of spinners for data fetching
+- Supervisor update form is single-page, large touch targets (48px quantity input), language toggle, offline queue indicator
+- Language toggle (English/Tamil) renders different placeholder text and AI hint copy
+- Online/offline indicator with queued-update count always visible to supervisors
+- Every run-rate warning explains WHY it is shown (shortfall, projected completion, days remaining)
+- Empty states have icons, descriptions, and contextual action buttons
+- Custom bar chart with hover tooltips instead of Recharts AreaChart for precise bar sizing control
+- KPI cards have coloured top-accent bars and status-appropriate background tints
+- Milestone timeline uses node icons (check/alert/circle) with line connectors for visual clarity
+- Buyer portal uses a dedicated navy header strip and 4-card summary strip
 
 ### Screen Summary
 | Screen | Primary Users | Key Features |
 |--------|--------------|-------------|
-| Login | All | Email/password, demo quick-fill, role-based redirect |
-| Dashboard | Merchandiser | KPI cards, trend chart, early warnings, upcoming deadlines |
-| Order Board | Merchandiser | Filterable table, risk badges, progress bars, pagination |
-| Order Detail | Merchandiser | Run-rate analysis, TNA timeline, update history, size matrix |
+| Login | All | Branded left panel with mesh gradient, quick-fill demo buttons |
+| Dashboard | Merchandiser | KPI cards with accent tops, 7-day bar chart, warning panel, deadlines |
+| Order Board | Merchandiser | Sortable table, filterable by buyer/unit/status, progress bars |
+| Order Detail | Merchandiser | Run-rate analysis with expandable milestones, TNA timeline, audit trail |
 | Create Order | Merchandiser | Colour/size matrix, TNA template preview |
-| TNA Calendar | Merchandiser | Monthly calendar view, upcoming milestones list |
-| Supervisor Update | Supervisor | Mobile-first, Tamil support, camera, voice, offline queue |
-| Reports | Merchandiser | PDF/Excel export, buyer filter |
-| Settings | Merchandiser | Profile, buyer links, AI status |
-| Buyer Portal | Buyer | Read-only, tokenised, isolated to buyer's orders |
+| TNA Calendar | Merchandiser | Monthly calendar grid with milestone dots |
+| Supervisor Update | Supervisor | Mobile-first, Tamil toggle, 48px quantity input, voice + camera |
+| Reports | Merchandiser | Filter bar, PDF/Excel export with status-coloured cells |
+| Settings | Merchandiser | Profile, buyer link generation, AI configuration status |
+| Buyer Portal | Buyer | Navy header, order cards with timeline/photos/date changes |
 
 ---
 
@@ -551,9 +561,32 @@ src/lib/dashboard-aggregation.test.ts — 13 tests
   ✓ Real seeded diagnostic values verified (7,691 pcs total)
 ```
 
-**Final test results: 84/84 pass ✓**
-**ESLint: 0 errors, 2 informational warnings**
+**Final test results: 84/84 pass**
+**ESLint: 0 errors, 10 informational warnings (RHF compiler note, blob URL img)**
 **Production build: passes cleanly (npm run build exits 0)**
+
+### Production Bugs Found and Fixed
+
+**Bug 1: Dashboard showing 0 production updates (PGRST201)**
+
+`production_updates` has two FK columns to `profiles` (`supervisor_id`, `ai_corrected_by`). Querying with `.select('*, supervisor:profiles(full_name)')` was ambiguous — PostgREST returned 0 rows silently.
+
+Fix: Explicit FK hint in all three query locations:
+```typescript
+.select('*, supervisor:profiles!production_updates_supervisor_id_fkey(full_name)')
+```
+
+**Bug 2: Vercel prerender failures — Math.random() and fetch() during build**
+
+Next.js 16 with `cacheComponents: true` and `partialPrefetching: true` attempted Partial Prerender of auth-gated pages. The Supabase JS client internally calls `Math.random()` for request IDs during client initialization.
+
+Fix: Added `await connection()` from `next/server` BEFORE `createClient()` in all 13 server-rendered pages, plus `export const instant = false` to mark them as blocking routes.
+
+**Bug 3: Server/Client boundary violation (event handlers in Server Component)**
+
+`upcoming-deadlines.tsx` was a Server Component passing `onMouseEnter`/`onMouseLeave` functions to a `<Link>` (Client Component). Next.js cannot serialize function props across the boundary.
+
+Fix: Replaced JavaScript event handlers with a CSS `hover:bg-[var(--bg-subtle)]` Tailwind class.
 
 ### Live Testing Results (Supabase: kxhwpjsdqdxuvpisefmj)
 
@@ -573,19 +606,6 @@ src/lib/dashboard-aggregation.test.ts — 13 tests
 | PDF export with real order data | ✅ | Manual — downloaded and verified |
 | Excel export | ✅ | Manual — downloaded and verified |
 | Milestone date-change audit | ✅ | Manual — history recorded correctly |
-
-### Critical Bug Identified and Fixed During Testing
-
-**Bug:** Dashboard "Weekly Production Trend" showed 0 pcs and "Recent Factory Updates" showed "No updates yet" despite 18 production update records existing in the database.
-
-**Root cause confirmed by diagnostic (`scripts/rls-check.ts`):** PostgREST error PGRST201 — `production_updates` has two foreign keys to `profiles` (`supervisor_id` and `ai_corrected_by`). The query `.select('*, supervisor:profiles(full_name)')` was ambiguous, causing PostgREST to return 0 rows without raising a client-visible error.
-
-**Fix:** Explicit FK hint applied in all three query locations:
-```typescript
-.select('*, supervisor:profiles!production_updates_supervisor_id_fkey(full_name)')
-```
-
-**Regression test added:** `src/lib/dashboard-aggregation.test.ts` (4 tests) asserts the explicit FK hint is present in dashboard, order detail, and updates page query strings.
 
 ---
 
@@ -681,7 +701,10 @@ Supabase
 | All automated tests | ✅ 84/84 pass |
 | ESLint: 0 errors | ✅ Verified |
 | Production build | ✅ Passes cleanly |
-| 24 meaningful Git commits | ✅ Pushed to GitHub |
+| Premium UI transformation (5 commits) | ✅ Deployed to Vercel |
+| Prerender fix (connection + instant=false) | ✅ Deployed |
+| Server/Client boundary fix | ✅ Deployed |
+| 29+ meaningful Git commits | ✅ Pushed to GitHub |
 | `.env.example` (no secrets) | ✅ Done |
 | `deployment.md` | ✅ Updated |
 | `TDD.md` | ✅ This document |
