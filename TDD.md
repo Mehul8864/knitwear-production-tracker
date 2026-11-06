@@ -18,7 +18,7 @@ The system connects three distinct user types: **merchandisers** who manage orde
 
 ## 2. Problem Statement
 
-A ₹100 crore knitwear export company in Tiruppur faces these recurring challenges:
+A INR 100 crore knitwear export company in Tiruppur faces these recurring challenges:
 
 - **No single source of truth.** Production status lives in WhatsApp groups, shared Excel files, and phone calls.
 - **Late identification of delays.** A shortfall in stitching output is not discovered until it causes a missed shipment.
