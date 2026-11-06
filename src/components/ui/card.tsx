@@ -1,36 +1,40 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'bg-white rounded-xl border border-[var(--border)] shadow-[var(--shadow-sm)]',
-        className
-      )}
-      {...props}
-    />
-  )
-)
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { hover?: boolean }
+>(({ className, hover, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      'rounded-[var(--radius-lg)] bg-white',
+      'border border-[var(--border)]',
+      'shadow-[var(--shadow-sm)]',
+      hover && 'transition-shadow duration-200 hover:shadow-[var(--shadow-md)] hover:border-[var(--border-strong)] cursor-pointer',
+      className
+    )}
+    {...props}
+  />
+))
 Card.displayName = 'Card'
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn('flex flex-col gap-1.5 p-5 pb-0', className)}
-      {...props}
-    />
+    <div ref={ref} className={cn('flex flex-col gap-1 p-5 pb-0', className)} {...props} />
   )
 )
 CardHeader.displayName = 'CardHeader'
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('font-semibold text-base text-[var(--text-primary)] leading-none tracking-tight', className)}
+      className={cn(
+        'font-semibold text-[14.5px] leading-tight tracking-[-0.01em]',
+        'text-[var(--text-primary)]',
+        className
+      )}
       {...props}
     />
   )
@@ -41,7 +45,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn('text-sm text-[var(--text-muted)]', className)}
+      className={cn('text-[12.5px] text-[var(--text-muted)] leading-relaxed', className)}
       {...props}
     />
   )
