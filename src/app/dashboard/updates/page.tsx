@@ -14,8 +14,8 @@ export const metadata: Metadata = { title: 'Production Updates' }
 export const instant = false
 
 export default async function UpdatesPage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   const [updatesResult, reviewResult] = await Promise.all([
     supabase

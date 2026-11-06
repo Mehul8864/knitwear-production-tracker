@@ -22,8 +22,8 @@ export const metadata: Metadata = { title: 'Dashboard' }
 export const instant = false
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   // Ensure auth.uid() is resolved before RLS-gated queries run
   const { data: { user } } = await supabase.auth.getUser()

@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: 'TNA Calendar' }
 export const instant = false
 
 export default async function TNAPage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   const [milestonesResult, ordersResult] = await Promise.all([
     supabase

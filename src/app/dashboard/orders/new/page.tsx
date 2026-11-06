@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: 'Create Order' }
 export const instant = false
 
 export default async function CreateOrderPage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   const [buyersResult, unitsResult, templatesResult] = await Promise.all([
     supabase.from('buyers').select('*').order('name'),

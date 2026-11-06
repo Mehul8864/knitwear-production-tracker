@@ -49,10 +49,7 @@ export function UpcomingDeadlines({ orders }: UpcomingDeadlinesProps) {
                 <Link
                   key={order.id}
                   href={`/dashboard/orders/${order.id}`}
-                  className="flex items-center gap-4 px-3 py-2.5 rounded-[var(--radius-md)] transition-all duration-150 group -mx-1"
-                  style={{ color: 'inherit' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-subtle)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+                  className="flex items-center gap-4 px-3 py-2.5 rounded-[var(--radius-md)] transition-colors duration-150 group -mx-1 hover:bg-[var(--bg-subtle)]"
                 >
                   {/* PO + progress */}
                   <div className="flex-1 min-w-0">

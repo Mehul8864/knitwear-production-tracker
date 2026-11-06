@@ -14,8 +14,8 @@ export const instant = false
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
   const { data } = await supabase.from('orders').select('po_number').eq('id', id).single()
   return { title: data?.po_number ?? 'Order' }
 }

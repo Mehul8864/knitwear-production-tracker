@@ -14,8 +14,8 @@ export const metadata: Metadata = { title: 'Submit Update' }
 export const instant = false
 
 export default async function SupervisorUpdatePage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: 'Reports' }
 export const instant = false
 
 export default async function ReportsPage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   const [ordersResult, buyersResult] = await Promise.all([
     supabase

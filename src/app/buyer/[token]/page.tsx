@@ -21,8 +21,8 @@ export const instant = false
 
 export default async function BuyerPortalPage({ params }: Props) {
   const { token } = await params
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   // Hash the token before looking it up
   const tokenHash = await hashToken(token)

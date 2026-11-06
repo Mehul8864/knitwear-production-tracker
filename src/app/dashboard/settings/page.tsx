@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: 'Settings' }
 export const instant = false
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
   await connection()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
 
