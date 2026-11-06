@@ -13,12 +13,6 @@ interface AppShellProps {
 export function AppShell({ children, profile }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Close sidebar on route change on mobile
-  useEffect(() => {
-    if (sidebarOpen) setSidebarOpen(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   // Prevent body scroll when mobile sidebar open
   useEffect(() => {
     if (sidebarOpen) {

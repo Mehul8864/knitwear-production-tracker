@@ -1,71 +1,105 @@
 import type { Metadata } from 'next'
 import { LoginForm } from '@/components/auth/login-form'
 
-export const metadata: Metadata = {
-  title: 'Sign In',
-}
+export const metadata: Metadata = { title: 'Sign In — StitchOps' }
+
+const FEATURES = [
+  {
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 mt-0.5" aria-hidden="true">
+        <path d="M3 3v18h18" /><path d="M7 16l4-4 4 4 4-6" />
+      </svg>
+    ),
+    title: 'Real-time run-rate tracking',
+    desc: 'Know your production velocity before it becomes a crisis.',
+  },
+  {
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 mt-0.5" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+    title: 'Multi-unit coordination',
+    desc: 'Supervisors update from the factory floor. You see it instantly.',
+  },
+  {
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 mt-0.5" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" /><path d="M2 12h4M18 12h4M12 2v4M12 18v4" />
+      </svg>
+    ),
+    title: 'Buyer transparency portal',
+    desc: 'Share verified progress with international buyers, without the emails.',
+  },
+  {
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="shrink-0 mt-0.5" aria-hidden="true">
+        <path d="M18.364 5.636A9 9 0 1 1 5.636 18.364" /><polyline points="15 2 22 2 22 9" />
+      </svg>
+    ),
+    title: 'Offline-first mobile',
+    desc: 'Works on poor connectivity. Updates sync automatically when back online.',
+  },
+]
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel — branding */}
+    <div className="min-h-screen flex" style={{ background: 'var(--bg-base)' }}>
+      {/* ─── Left panel — branding ─── */}
       <div
-        className="hidden lg:flex lg:w-[480px] xl:w-[540px] flex-col justify-between p-12 relative overflow-hidden"
+        className="hidden lg:flex lg:w-[460px] xl:w-[520px] flex-col justify-between p-12 relative overflow-hidden shrink-0"
         style={{ background: 'var(--navy)' }}
       >
-        {/* Background pattern */}
+        {/* Subtle mesh pattern */}
         <div
-          className="absolute inset-0 opacity-5"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundImage: `
+              radial-gradient(circle at 20% 20%, rgba(79,110,247,0.12) 0%, transparent 60%),
+              radial-gradient(circle at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 60%)
+            `,
+            pointerEvents: 'none',
           }}
+          aria-hidden="true"
         />
+        {/* Grid dots */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
+            backgroundSize: '28px 28px',
+          }}
+          aria-hidden="true"
+        />
+
         {/* Logo */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M10 2L3 7v11h5v-6h4v6h5V7L10 2z"
-                  fill="white"
-                  fillOpacity="0.9"
-                />
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.16)' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M10 2L3 7v11h5v-6h4v6h5V7L10 2z" fill="white" fillOpacity="0.95" />
               </svg>
             </div>
-            <span className="text-white font-semibold text-xl tracking-tight">StitchOps</span>
+            <span className="text-white font-semibold text-[19px] tracking-[-0.015em]">StitchOps</span>
           </div>
-          <p className="text-white/60 text-sm">Production visibility. Without the chasing.</p>
+          <p className="text-[14px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Production visibility.<br />Without the chasing.
+          </p>
         </div>
 
         {/* Feature list */}
-        <div className="relative z-10 space-y-6">
-          {[
-            {
-              icon: '📊',
-              title: 'Real-time run-rate tracking',
-              desc: 'Know your production velocity before it becomes a crisis.',
-            },
-            {
-              icon: '🏭',
-              title: 'Multi-unit coordination',
-              desc: 'Supervisors update from the factory floor. You see it instantly.',
-            },
-            {
-              icon: '🌐',
-              title: 'Buyer transparency portal',
-              desc: 'Share verified progress with international buyers — without the emails.',
-            },
-            {
-              icon: '⚡',
-              title: 'Offline-first mobile',
-              desc: 'Works even on poor factory floor connectivity. Syncs when back online.',
-            },
-          ].map((f) => (
+        <div className="relative z-10 space-y-5">
+          {FEATURES.map(f => (
             <div key={f.title} className="flex gap-3.5">
-              <span className="text-lg mt-0.5">{f.icon}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>{f.icon}</span>
               <div>
-                <p className="text-white font-medium text-sm">{f.title}</p>
-                <p className="text-white/50 text-sm mt-0.5">{f.desc}</p>
+                <p className="text-white font-medium text-[13.5px] leading-snug">{f.title}</p>
+                <p className="text-[12.5px] mt-1 leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  {f.desc}
+                </p>
               </div>
             </div>
           ))}
@@ -73,53 +107,74 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="relative z-10">
-          <p className="text-white/30 text-xs">
+          <p className="text-[11.5px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
             © 2026 StitchOps · Tiruppur, Tamil Nadu, India
           </p>
         </div>
       </div>
 
-      {/* Right panel — login form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-[var(--bg-base)]">
+      {/* ─── Right panel — login form ─── */}
+      <div
+        className="flex-1 flex items-center justify-center p-5 sm:p-8"
+        style={{ background: 'var(--bg-base)' }}
+      >
         <div className="w-full max-w-[400px]">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-10">
-            <div className="w-8 h-8 rounded-lg bg-[var(--navy)] flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+          {/* Mobile brand */}
+          <div className="lg:hidden flex items-center gap-2.5 mb-10">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: 'var(--navy)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 2L3 7v11h5v-6h4v6h5V7L10 2z" fill="white" />
               </svg>
             </div>
-            <span className="font-semibold text-[var(--text-primary)] text-lg tracking-tight">StitchOps</span>
+            <span className="font-semibold text-[17px] tracking-[-0.012em]" style={{ color: 'var(--text-primary)' }}>
+              StitchOps
+            </span>
           </div>
 
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
+          {/* Heading */}
+          <div className="mb-7">
+            <h1
+              className="text-[24px] font-bold tracking-[-0.022em]"
+              style={{ color: 'var(--text-primary)' }}
+            >
               Welcome back
             </h1>
-            <p className="text-[var(--text-muted)] text-sm mt-1.5">
+            <p className="text-[13.5px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
               Sign in to your production workspace
             </p>
           </div>
 
+          {/* Form */}
           <LoginForm />
 
           {/* Demo credentials */}
-          <div className="mt-8 rounded-xl border border-[var(--border)] bg-white p-4">
-            <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-3">
-              Demo credentials
-            </p>
-            <div className="space-y-2">
+          <div
+            className="mt-7 rounded-[var(--radius-lg)] border border-[var(--border)] overflow-hidden"
+            style={{ boxShadow: 'var(--shadow-xs)' }}
+          >
+            <div
+              className="px-4 py-2.5"
+              style={{ background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border)' }}
+            >
+              <p className="text-label-caps">Demo credentials</p>
+            </div>
+            <div className="bg-white divide-y divide-[var(--border-light)]">
               {[
-                { role: 'Merchandiser', email: 'merchandiser@stitchops.demo', password: 'Demo@2026!' },
-                { role: 'Supervisor', email: 'supervisor@stitchops.demo', password: 'Demo@2026!' },
-                { role: 'Buyer (Company B)', email: 'buyer-b@stitchops.demo', password: 'Demo@2026!' },
-              ].map((cred) => (
-                <div key={cred.role} className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs font-medium text-[var(--text-primary)]">{cred.role}</p>
-                    <p className="text-xs text-[var(--text-muted)] font-mono">{cred.email}</p>
+                { role: 'Merchandiser',     email: 'merchandiser@stitchops.demo', password: 'Demo@2026!' },
+                { role: 'Supervisor',       email: 'supervisor@stitchops.demo',   password: 'Demo@2026!' },
+                { role: 'Buyer (Company B)',email: 'buyer-b@stitchops.demo',      password: 'Demo@2026!' },
+              ].map(cred => (
+                <div key={cred.role} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12.5px] font-medium" style={{ color: 'var(--text-primary)' }}>{cred.role}</p>
+                    <p className="text-[11.5px] text-mono-sm truncate" style={{ color: 'var(--text-muted)' }}>{cred.email}</p>
                   </div>
-                  <span className="text-xs text-[var(--text-muted)] font-mono shrink-0">{cred.password}</span>
+                  <span className="text-[11.5px] text-mono-sm shrink-0" style={{ color: 'var(--text-faint)' }}>
+                    {cred.password}
+                  </span>
                 </div>
               ))}
             </div>

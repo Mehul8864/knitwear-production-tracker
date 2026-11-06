@@ -33,6 +33,35 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
     : <ChevronDown className="h-3 w-3" style={{ color: 'var(--accent)' }} />
 }
 
+// Also outside component — receives sort state and handler as props
+function ThSort({
+  field,
+  label,
+  sortField,
+  sortDir,
+  onSort,
+}: {
+  field: SortField
+  label: string
+  sortField: SortField
+  sortDir: SortDir
+  onSort: (field: SortField) => void
+}) {
+  return (
+    <th
+      className="text-left px-4 py-3 text-label-caps cursor-pointer select-none whitespace-nowrap transition-colors"
+      onClick={() => onSort(field)}
+      style={{ color: sortField === field ? 'var(--accent)' : 'var(--text-muted)' }}
+      aria-sort={sortField === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <span className="flex items-center gap-1.5">
+        {label}
+        <SortIcon field={field} sortField={sortField} sortDir={sortDir} />
+      </span>
+    </th>
+  )
+}
+
 interface OrderBoardProps {
   initialOrders: Order[]
   buyers: Buyer[]
@@ -86,22 +115,6 @@ export function OrderBoard({ initialOrders, buyers, units }: OrderBoardProps) {
 
   const totalPages = Math.ceil(filtered.length / pageSize)
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize)
-
-  function ThSort({ field, label }: { field: SortField; label: string }) {
-    return (
-      <th
-        className="text-left px-4 py-3 text-label-caps cursor-pointer select-none whitespace-nowrap transition-colors"
-        onClick={() => handleSort(field)}
-        style={{ color: sortField === field ? 'var(--accent)' : 'var(--text-muted)' }}
-        aria-sort={sortField === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-      >
-        <span className="flex items-center gap-1.5">
-          {label}
-          <SortIcon field={field} sortField={sortField} sortDir={sortDir} />
-        </span>
-      </th>
-    )
-  }
 
   return (
     <div className="space-y-3">
@@ -193,13 +206,13 @@ export function OrderBoard({ initialOrders, buyers, units }: OrderBoardProps) {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
                 <th className="text-left px-4 py-3 text-label-caps whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Status</th>
-                <ThSort field="po_number" label="PO Number" />
+                <ThSort field="po_number" label="PO Number" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                 <th className="text-left px-4 py-3 text-label-caps whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Buyer</th>
                 <th className="text-left px-4 py-3 text-label-caps" style={{ color: 'var(--text-muted)' }}>Style</th>
                 <th className="text-left px-4 py-3 text-label-caps whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Stage</th>
                 <th className="text-right px-4 py-3 text-label-caps whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>Total</th>
                 <th className="text-left px-4 py-3 text-label-caps min-w-[140px]" style={{ color: 'var(--text-muted)' }}>Progress</th>
-                <ThSort field="ex_factory_date" label="Ex-factory" />
+                <ThSort field="ex_factory_date" label="Ex-factory" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                 <th className="w-8" />
               </tr>
             </thead>

@@ -3,18 +3,18 @@ import { cn } from '@/lib/utils'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean
-  prefix?: React.ReactNode
-  suffix?: React.ReactNode
+  prefixSlot?: React.ReactNode
+  suffixSlot?: React.ReactNode
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, prefix, suffix, ...props }, ref) => {
-    if (prefix || suffix) {
+  ({ className, type, error, prefixSlot, suffixSlot, ...props }, ref) => {
+    if (prefixSlot || suffixSlot) {
       return (
         <div className="relative flex items-center">
-          {prefix && (
+          {prefixSlot && (
             <div className="absolute left-3 flex items-center pointer-events-none" style={{ color: 'var(--text-muted)' }}>
-              {prefix}
+              {prefixSlot}
             </div>
           )}
           <input
@@ -28,15 +28,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               'focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-muted)]',
               'disabled:cursor-not-allowed disabled:opacity-40 disabled:bg-[var(--bg-subtle)]',
               error && 'border-[var(--red)] focus:border-[var(--red)] focus:ring-[var(--red-bg-alt)]',
-              prefix ? 'pl-9' : 'pl-3',
-              suffix ? 'pr-9' : 'pr-3',
+              prefixSlot ? 'pl-9' : 'pl-3',
+              suffixSlot ? 'pr-9' : 'pr-3',
               className
             )}
             {...props}
           />
-          {suffix && (
+          {suffixSlot && (
             <div className="absolute right-3 flex items-center" style={{ color: 'var(--text-muted)' }}>
-              {suffix}
+              {suffixSlot}
             </div>
           )}
         </div>

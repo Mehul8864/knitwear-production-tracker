@@ -1,7 +1,6 @@
 'use client'
 
-import { RiskBadge, StageBadge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { RiskBadge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { formatDate, percentage, formatNumber } from '@/lib/utils'
 import { cn } from '@/lib/utils'

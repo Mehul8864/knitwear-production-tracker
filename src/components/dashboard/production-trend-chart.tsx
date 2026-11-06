@@ -1,38 +1,12 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import type { Order, ProductionUpdate } from '@/types/database'
 
 interface ProductionTrendChartProps {
   orders: Order[]
   updates: ProductionUpdate[]
-}
-
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div
-      className="px-3.5 py-2.5 rounded-[var(--radius-md)] text-[12.5px]"
-      style={{
-        background: 'var(--navy)',
-        color: 'white',
-        boxShadow: 'var(--shadow-lg)',
-      }}
-    >
-      <p className="font-medium mb-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</p>
-      <p className="font-semibold text-[14px]">{(payload[0]?.value ?? 0).toLocaleString()} <span className="text-[11px] font-normal opacity-70">pcs</span></p>
-    </div>
-  )
 }
 
 export function ProductionTrendChart({ updates }: ProductionTrendChartProps) {
