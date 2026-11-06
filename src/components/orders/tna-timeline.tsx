@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, Circle, Clock, Edit2 } from 'lucide-react'
+import { CheckCircle2, Circle, Clock, Edit2, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/utils'
 import type { OrderMilestone } from '@/types/database'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const STAGE_LABELS: Record<string, string> = {
   fabric_inhouse: 'Fabric In-house',
@@ -45,25 +46,14 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
 
   async function handleSaveDate() {
     if (!editState) return
-    if (!editState.newDate) {
-      toast.error('Please select a new date')
-      return
-    }
-    if (!editState.reason.trim()) {
-      toast.error('Please provide a reason for the date change')
-      return
-    }
-
+    if (!editState.newDate) { toast.error('Please select a new date'); return }
+    if (!editState.reason.trim()) { toast.error('Please provide a reason for the date change'); return }
     setSaving(true)
     try {
       const res = await fetch(`/api/milestones/${editState.milestone.id}/date`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          newDate: editState.newDate,
-          reason: editState.reason,
-          orderId,
-        }),
+        body: JSON.stringify({ newDate: editState.newDate, reason: editState.reason, orderId }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -71,7 +61,6 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
       }
       toast.success('Milestone date updated')
       setEditState(null)
-      // Refresh the page to show updated data
       window.location.reload()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error updating date')
@@ -83,26 +72,55 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
   if (milestones.length === 0) {
     return (
       <Card>
-        <CardContent className="py-12 text-center">
-          <p className="text-sm font-medium text-[var(--text-primary)]">No TNA milestones yet</p>
-          <p className="text-xs text-[var(--text-muted)] mt-1">
-            Generate milestones from a TNA template when creating the order
-          </p>
+        <CardContent>
+          <EmptyState icon={Clock} title="No TNA milestones" description="Milestones are generated when creating an order with a TNA template" />
         </CardContent>
       </Card>
     )
   }
 
+  const completedCount = milestones.filter(m => m.completed_date).length
+  const totalCount = milestones.length
+
   return (
     <>
       <Card>
         <CardContent className="p-5">
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-[11px] top-4 bottom-4 w-0.5 bg-[var(--border)]" />
+          {/* Progress summary */}
+          <div className="flex items-center justify-between mb-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <div>
+              <p className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                {completedCount} of {totalCount} milestones complete
+              </p>
+              <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                Monday–Saturday working calendar
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[12px]" style={{ color: 'var(--text-muted)' }}>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--green)' }} />
+                Done
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
+                Current
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ background: 'var(--border-strong)' }} />
+                Upcoming
+              </div>
+            </div>
+          </div>
 
+          {/* Timeline */}
+          <div className="relative">
+            {/* Vertical line */}
+            <div
+              className="absolute left-[11px] top-4 bottom-4 w-[1.5px]"
+              style={{ background: 'var(--border)' }}
+            />
             <div className="space-y-0">
-              {milestones.map((m) => {
+              {milestones.map(m => {
                 const targetDate = new Date(m.target_date)
                 targetDate.setHours(0, 0, 0, 0)
                 const isComplete = !!m.completed_date
@@ -110,22 +128,31 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
                 const isCurrent = m.is_active
 
                 return (
-                  <div key={m.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
-                    {/* Icon */}
-                    <div className="relative z-10 shrink-0">
+                  <div key={m.id} className="relative flex items-start gap-4 pb-5 last:pb-0">
+                    {/* Node */}
+                    <div
+                      className="relative z-10 w-[23px] h-[23px] rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                      style={{
+                        background: isComplete ? 'var(--green-bg)' :
+                                    isCurrent  ? 'var(--accent-light)' :
+                                    isPast     ? 'var(--red-bg)' :
+                                    'white',
+                        border: `1.5px solid ${
+                          isComplete ? 'var(--green)' :
+                          isCurrent  ? 'var(--accent)' :
+                          isPast     ? 'var(--red)' :
+                          'var(--border)'
+                        }`,
+                      }}
+                    >
                       {isComplete ? (
-                        <CheckCircle2 className="h-6 w-6 text-emerald-500 bg-white" />
+                        <CheckCircle2 className="h-3 w-3" style={{ color: 'var(--green)' }} />
+                      ) : isPast ? (
+                        <AlertCircle className="h-3 w-3" style={{ color: 'var(--red)' }} />
                       ) : isCurrent ? (
-                        <div className="h-6 w-6 rounded-full border-2 border-[var(--accent)] bg-[var(--accent-light)] flex items-center justify-center">
-                          <div className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                        </div>
+                        <div className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)' }} />
                       ) : (
-                        <Circle
-                          className={cn(
-                            'h-6 w-6 bg-white',
-                            isPast ? 'text-red-400' : 'text-[var(--border-strong)]'
-                          )}
-                        />
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--border-strong)' }} />
                       )}
                     </div>
 
@@ -135,54 +162,54 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
                         <div>
                           <p
                             className={cn(
-                              'font-medium text-sm',
-                              isComplete
-                                ? 'text-emerald-700'
-                                : isCurrent
-                                ? 'text-[var(--text-primary)]'
-                                : 'text-[var(--text-secondary)]'
+                              'text-[13px] font-medium',
+                              isComplete ? 'line-through' : ''
                             )}
+                            style={{
+                              color: isComplete ? 'var(--text-muted)' :
+                                     isCurrent  ? 'var(--text-primary)' :
+                                     'var(--text-secondary)',
+                            }}
                           >
                             {STAGE_LABELS[m.stage] ?? m.name}
                             {isCurrent && (
-                              <span className="ml-2 text-xs font-semibold text-[var(--accent)] bg-[var(--accent-light)] px-2 py-0.5 rounded-full">
+                              <span
+                                className="ml-2 text-[10.5px] font-semibold px-1.5 py-0.5 rounded-full"
+                                style={{ background: 'var(--accent-muted)', color: 'var(--accent)' }}
+                              >
                                 Current
                               </span>
                             )}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Clock className="h-3 w-3 text-[var(--text-muted)]" />
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Clock className="h-3 w-3 shrink-0" style={{ color: 'var(--text-muted)' }} />
                             <span
                               className={cn(
-                                'text-xs',
-                                isPast ? 'text-red-600 font-medium' : 'text-[var(--text-muted)]'
+                                'text-[11.5px]',
+                                isPast ? 'font-medium' : ''
                               )}
+                              style={{ color: isPast ? 'var(--red-text)' : 'var(--text-muted)' }}
                             >
                               {formatDate(m.target_date)}
-                              {isPast && ' (overdue)'}
+                              {isPast && ' · overdue'}
                             </span>
                             {isComplete && m.completed_date && (
-                              <span className="text-xs text-emerald-600">
-                                · Completed {formatDate(m.completed_date)}
+                              <span className="text-[11.5px]" style={{ color: 'var(--green-text)' }}>
+                                · Done {formatDate(m.completed_date)}
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                          <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-faint)' }}>
                             {m.completed_quantity.toLocaleString()} / {m.target_quantity.toLocaleString()} pcs
-                          </div>
+                          </p>
                         </div>
                         <Button
                           variant="ghost"
-                          size="icon-sm"
-                          onClick={() =>
-                            setEditState({
-                              milestone: m,
-                              newDate: m.target_date.split('T')[0],
-                              reason: '',
-                            })
-                          }
+                          size="icon-xs"
+                          onClick={() => setEditState({ milestone: m, newDate: m.target_date.split('T')[0], reason: '' })}
+                          aria-label={`Edit date for ${STAGE_LABELS[m.stage] ?? m.name}`}
                         >
-                          <Edit2 className="h-3.5 w-3.5" />
+                          <Edit2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -194,50 +221,43 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
         </CardContent>
       </Card>
 
-      {/* Edit date dialog */}
-      <Dialog open={!!editState} onOpenChange={(open) => !open && setEditState(null)}>
+      <Dialog open={!!editState} onOpenChange={open => !open && setEditState(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Milestone Date</DialogTitle>
           </DialogHeader>
           {editState && (
-            <div className="space-y-4">
-              <p className="text-sm text-[var(--text-muted)]">
-                Changing date for:{' '}
-                <strong className="text-[var(--text-primary)]">
+            <div className="space-y-4 py-1">
+              <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+                Changing: <strong style={{ color: 'var(--text-primary)' }}>
                   {STAGE_LABELS[editState.milestone.stage] ?? editState.milestone.name}
                 </strong>
               </p>
-              <div className="space-y-1.5">
-                <Label>Current Date</Label>
-                <Input
-                  value={formatDate(editState.milestone.target_date)}
-                  disabled
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>New Date *</Label>
-                <Input
-                  type="date"
-                  value={editState.newDate}
-                  onChange={(e) =>
-                    setEditState((s) => s ? { ...s, newDate: e.target.value } : s)
-                  }
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Current Date</Label>
+                  <Input value={formatDate(editState.milestone.target_date)} disabled />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>New Date *</Label>
+                  <Input
+                    type="date"
+                    value={editState.newDate}
+                    onChange={e => setEditState(s => s ? { ...s, newDate: e.target.value } : s)}
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label>Reason for change *</Label>
                 <Textarea
-                  placeholder="Explain why this date is being changed. This will be recorded in the audit history."
+                  placeholder="Explain why this date is being changed. This is permanently recorded in the audit history."
                   value={editState.reason}
-                  onChange={(e) =>
-                    setEditState((s) => s ? { ...s, reason: e.target.value } : s)
-                  }
-                  className="h-24"
+                  onChange={e => setEditState(s => s ? { ...s, reason: e.target.value } : s)}
+                  className="h-[80px]"
                 />
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                All date changes are permanently recorded in the audit history.
+              <p className="text-[11.5px]" style={{ color: 'var(--text-muted)' }}>
+                All date changes are permanently recorded and visible to compliance teams.
               </p>
             </div>
           )}
