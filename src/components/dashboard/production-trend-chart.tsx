@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
   AreaChart,
   Area,
@@ -18,108 +18,127 @@ interface ProductionTrendChartProps {
   updates: ProductionUpdate[]
 }
 
-export function ProductionTrendChart({ updates }: ProductionTrendChartProps) {
-  const chartData = useMemo(() => {
-    // Build 7-day rolling window from today backwards.
-    // Use UTC dates throughout to avoid timezone shift issues.
-    // update_date is a Supabase DATE column returned as 'YYYY-MM-DD' string.
-    const days: { date: string; label: string; quantity: number }[] = []
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div
+      className="px-3.5 py-2.5 rounded-[var(--radius-md)] text-[12.5px]"
+      style={{
+        background: 'var(--navy)',
+        color: 'white',
+        boxShadow: 'var(--shadow-lg)',
+      }}
+    >
+      <p className="font-medium mb-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</p>
+      <p className="font-semibold text-[14px]">{(payload[0]?.value ?? 0).toLocaleString()} <span className="text-[11px] font-normal opacity-70">pcs</span></p>
+    </div>
+  )
+}
 
-    // Anchor to today's date in UTC (avoids local timezone shifting the date)
+export function ProductionTrendChart({ updates }: ProductionTrendChartProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+
+  const chartData = useMemo(() => {
     const nowUtc = new Date()
     const todayUtc = new Date(Date.UTC(nowUtc.getFullYear(), nowUtc.getMonth(), nowUtc.getDate()))
-
-    for (let i = 6; i >= 0; i--) {
+    return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(todayUtc)
-      d.setUTCDate(d.getUTCDate() - i)
-      const dateStr = d.toISOString().split('T')[0]   // always 'YYYY-MM-DD' in UTC
-
+      d.setUTCDate(d.getUTCDate() - (6 - i))
+      const dateStr = d.toISOString().split('T')[0]
       const qty = updates
-        .filter((u) => {
-          // update_date: plain DATE string '2026-11-05'
-          // created_at: TIMESTAMPTZ '2026-11-05T17:19:27.067187+00:00'
-          const updateDateStr = u.update_date
-            ? String(u.update_date).slice(0, 10)
-            : u.created_at
-            ? String(u.created_at).slice(0, 10)
-            : null
-          return updateDateStr === dateStr
+        .filter(u => {
+          const s = u.update_date ? String(u.update_date).slice(0, 10)
+                  : u.created_at ? String(u.created_at).slice(0, 10)
+                  : null
+          return s === dateStr
         })
         .reduce((sum, u) => sum + (u.quantity_completed ?? 0), 0)
-
-      // Label uses the UTC date value to stay consistent with dateStr
-      const label = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })
-      days.push({ date: dateStr, label, quantity: qty })
-    }
-    return days
+      const label = d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })
+      return { date: dateStr, label, quantity: qty }
+    })
   }, [updates])
 
   const total = chartData.reduce((s, d) => s + d.quantity, 0)
+  const maxQty = Math.max(...chartData.map(d => d.quantity), 1)
+  const avgQty = Math.round(total / 7)
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <CardTitle>Weekly Production Trend</CardTitle>
-            <p className="text-sm text-[var(--text-muted)] mt-1">
-              Total pieces produced over the last 7 days
+            <p className="text-[12.5px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              Pieces produced · last 7 days
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-[var(--text-primary)]">
+          <div className="text-right shrink-0">
+            <p
+              className="text-[24px] font-bold leading-none tracking-[-0.02em]"
+              style={{ color: 'var(--text-primary)' }}
+            >
               {total.toLocaleString()}
             </p>
-            <p className="text-xs text-[var(--text-muted)]">pcs this week</p>
+            <p className="text-[11.5px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              {avgQty.toLocaleString()} avg/day
+            </p>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-4">
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="quantityGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="var(--border)"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
-                boxShadow: 'var(--shadow-md)',
-                fontSize: '12px',
-                padding: '8px 12px',
-              }}
-              formatter={(value: number) => [`${value.toLocaleString()} pcs`, 'Produced']}
-            />
-            <Area
-              type="monotone"
-              dataKey="quantity"
-              stroke="#6366f1"
-              strokeWidth={2}
-              fill="url(#quantityGrad)"
-              dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }}
-              activeDot={{ r: 5, strokeWidth: 0 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      <CardContent className="pt-4 pb-3">
+        {/* Mini bar chart alternative using divs for precision */}
+        <div className="flex items-end gap-1.5 h-[120px] mb-2">
+          {chartData.map((d, i) => {
+            const pct = maxQty > 0 ? (d.quantity / maxQty) * 100 : 0
+            const isWeekend = new Date(d.date).getUTCDay() === 0
+            const isHovered = hoveredIndex === i
+            return (
+              <div
+                key={d.date}
+                className="flex-1 flex flex-col justify-end"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
+                <div className="relative group">
+                  {/* Tooltip */}
+                  {isHovered && d.quantity > 0 && (
+                    <div
+                      className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10.5px] font-medium text-white whitespace-nowrap z-10"
+                      style={{ background: 'var(--navy)' }}
+                    >
+                      {d.quantity.toLocaleString()}
+                    </div>
+                  )}
+                  <div
+                    className="rounded-[3px] transition-all duration-200"
+                    style={{
+                      height: `${Math.max(pct, d.quantity > 0 ? 4 : 0)}%`,
+                      minHeight: d.quantity > 0 ? '6px' : '0',
+                      background: isHovered
+                        ? 'var(--accent)'
+                        : isWeekend
+                        ? 'var(--bg-subtle)'
+                        : `linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%)`,
+                      opacity: isWeekend ? 0.4 : 1,
+                    }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {/* X axis labels */}
+        <div className="flex gap-1.5">
+          {chartData.map(d => (
+            <div
+              key={d.date}
+              className="flex-1 text-center text-[10.5px] font-medium"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {d.label}
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )

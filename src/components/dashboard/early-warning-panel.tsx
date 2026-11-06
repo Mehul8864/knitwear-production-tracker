@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { RiskBadge } from '@/components/ui/badge'
 import { daysUntil, formatDate } from '@/lib/utils'
 import type { Order } from '@/types/database'
 import { cn } from '@/lib/utils'
@@ -11,7 +12,7 @@ interface EarlyWarningPanelProps {
 
 export function EarlyWarningPanel({ orders }: EarlyWarningPanelProps) {
   const warnings = orders
-    .filter((o) => {
+    .filter(o => {
       const days = daysUntil(o.ex_factory_date)
       return days >= 0 && days <= 14 && o.risk_status !== 'GREEN'
     })
@@ -21,59 +22,79 @@ export function EarlyWarningPanel({ orders }: EarlyWarningPanelProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTriangle
+            className="h-4 w-4 shrink-0"
+            style={{ color: warnings.length > 0 ? 'var(--amber)' : 'var(--text-muted)' }}
+          />
           <CardTitle>Early Warnings</CardTitle>
           {warnings.length > 0 && (
-            <span className="ml-auto text-xs font-semibold text-amber-700 bg-[var(--amber-bg)] border border-[var(--amber-border)] px-2 py-0.5 rounded-full">
+            <span
+              className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full tabular-nums"
+              style={{ background: 'var(--amber-bg-alt)', color: 'var(--amber-text)', border: '1px solid var(--amber-border)' }}
+            >
               {warnings.length}
             </span>
           )}
         </div>
-        <p className="text-xs text-[var(--text-muted)] mt-1">
-          Orders with deadline ≤ 14 days at risk
+        <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          Orders at risk with deadline &le; 14 days
         </p>
       </CardHeader>
-      <CardContent className="pt-2">
+      <CardContent className="pt-3">
         {warnings.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-sm font-medium text-emerald-700">All clear</p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">No at-risk orders due soon</p>
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ background: 'var(--green-bg)' }}
+            >
+              <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--green)' }} />
+            </div>
+            <p className="text-[13px] font-medium" style={{ color: 'var(--green-text)' }}>All clear</p>
+            <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>No at-risk orders due soon</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {warnings.map((order) => {
+            {warnings.map(order => {
               const days = daysUntil(order.ex_factory_date)
+              const isCritical = days <= 3 || order.risk_status === 'RED'
               return (
                 <Link
                   key={order.id}
                   href={`/dashboard/orders/${order.id}`}
-                  className="block p-3 rounded-xl border border-[var(--border)] hover:border-amber-300 hover:bg-[var(--amber-bg)] transition-all"
+                  className="flex items-center gap-3 p-3 rounded-[var(--radius-md)] transition-all duration-150 group"
+                  style={{
+                    background: isCritical ? 'var(--red-bg)' : 'var(--amber-bg)',
+                    border: `1px solid ${isCritical ? 'var(--red-border)' : 'var(--amber-border)'}`,
+                  }}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-                        {order.po_number}
-                      </p>
-                      <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">
-                        {order.style_name}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
                       <span
-                        className={cn(
-                          'text-xs font-bold px-2 py-0.5 rounded-full',
-                          order.risk_status === 'RED'
-                            ? 'bg-[var(--red-bg)] text-red-700'
-                            : 'bg-[var(--amber-bg)] text-amber-700'
-                        )}
+                        className="text-[13px] font-semibold truncate"
+                        style={{ color: 'var(--text-primary)' }}
                       >
-                        {days === 0 ? 'Today' : `${days}d`}
+                        {order.po_number}
                       </span>
+                      <RiskBadge status={order.risk_status} />
                     </div>
+                    <p className="text-[11.5px] truncate" style={{ color: 'var(--text-muted)' }}>
+                      {formatDate(order.ex_factory_date)}
+                    </p>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-1.5">
-                    Ex-factory: {formatDate(order.ex_factory_date)}
-                  </p>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={cn(
+                        'text-[12px] font-bold tabular-nums',
+                        isCritical ? 'text-[var(--red-text)]' : 'text-[var(--amber-text)]'
+                      )}
+                    >
+                      {days}d
+                    </span>
+                    <ArrowRight
+                      className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: 'var(--text-muted)' }}
+                    />
+                  </div>
                 </Link>
               )
             })}

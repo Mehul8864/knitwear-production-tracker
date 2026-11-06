@@ -58,17 +58,21 @@ export default async function DashboardPage() {
   }).length
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5">
+      {/* Page header */}
       <div>
-        <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">
+        <h1
+          className="text-[20px] font-bold tracking-[-0.018em] leading-tight"
+          style={{ color: 'var(--text-primary)' }}
+        >
           Production Overview
         </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          Live factory status across all active orders
+        <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+          Live factory status · {total} active order{total !== 1 ? 's' : ''}
         </p>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI row */}
       <DashboardKPIs
         total={total}
         onTrack={onTrack}
@@ -79,12 +83,12 @@ export default async function DashboardPage() {
       />
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <div className="xl:col-span-2 space-y-4">
           <ProductionTrendChart orders={orders} updates={updates} />
           <UpcomingDeadlines orders={orders} />
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <EarlyWarningPanel orders={orders} />
           <RecentUpdates updates={updates} />
         </div>
