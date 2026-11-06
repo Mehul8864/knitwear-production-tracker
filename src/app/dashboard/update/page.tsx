@@ -1,14 +1,21 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { redirect } from 'next/navigation'
+
 import { SupervisorUpdateForm } from '@/components/supervisor/supervisor-update-form'
 
+
 export const metadata: Metadata = { title: 'Submit Update' }
+
 
 export const instant = false
 
 export default async function SupervisorUpdatePage() {
   const supabase = await createClient()
+  await connection()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 

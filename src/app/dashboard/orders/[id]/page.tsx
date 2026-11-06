@@ -1,17 +1,21 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { OrderDetailView } from '@/components/orders/order-detail-view'
 
-export const instant = false
+// Force dynamic rendering — prevent Partial Prerender of auth-gated pages
 
 interface Props {
   params: Promise<{ id: string }>
 }
 
+export const instant = false
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createClient()
+  await connection()
   const { data } = await supabase.from('orders').select('po_number').eq('id', id).single()
   return { title: data?.po_number ?? 'Order' }
 }
@@ -19,6 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function OrderDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
+  await connection()
 
   const [orderResult, milestonesResult, updatesResult, itemsResult, historyResult] =
     await Promise.all([

@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { TNACalendarView } from '@/components/tna/tna-calendar-view'
 
+
 export const metadata: Metadata = { title: 'TNA Calendar' }
+
 
 export const instant = false
 
 export default async function TNAPage() {
   const supabase = await createClient()
+  await connection()
 
   const [milestonesResult, ordersResult] = await Promise.all([
     supabase

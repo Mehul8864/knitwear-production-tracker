@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { CreateOrderForm } from '@/components/orders/create-order-form'
 
+
 export const metadata: Metadata = { title: 'Create Order' }
+
 
 export const instant = false
 
 export default async function CreateOrderPage() {
   const supabase = await createClient()
+  await connection()
 
   const [buyersResult, unitsResult, templatesResult] = await Promise.all([
     supabase.from('buyers').select('*').order('name'),

@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { OrderBoard } from '@/components/orders/order-board'
 
+
 export const metadata: Metadata = { title: 'Order Board' }
+
 
 export const instant = false
 
 export default async function OrdersPage() {
   const supabase = await createClient()
+  await connection()
 
   const [ordersResult, buyersResult, unitsResult] = await Promise.all([
     supabase

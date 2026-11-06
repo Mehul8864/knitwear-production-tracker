@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { SettingsView } from '@/components/settings/settings-view'
 
+
 export const metadata: Metadata = { title: 'Settings' }
+
 
 export const instant = false
 
 export default async function SettingsPage() {
   const supabase = await createClient()
+  await connection()
 
   const { data: { user } } = await supabase.auth.getUser()
 

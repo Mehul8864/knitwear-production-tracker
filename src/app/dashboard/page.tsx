@@ -1,18 +1,29 @@
-﻿import type { Metadata } from 'next'
+import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { redirect } from 'next/navigation'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { DashboardKPIs } from '@/components/dashboard/dashboard-kpis'
+
 import { EarlyWarningPanel } from '@/components/dashboard/early-warning-panel'
+
 import { RecentUpdates } from '@/components/dashboard/recent-updates'
+
 import { ProductionTrendChart } from '@/components/dashboard/production-trend-chart'
+
 import { UpcomingDeadlines } from '@/components/dashboard/upcoming-deadlines'
 
+
 export const metadata: Metadata = { title: 'Dashboard' }
+
 
 export const instant = false
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  await connection()
 
   // Ensure auth.uid() is resolved before RLS-gated queries run
   const { data: { user } } = await supabase.auth.getUser()
@@ -68,7 +79,7 @@ export default async function DashboardPage() {
           Production Overview
         </h1>
         <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
-          Live factory status · {total} active order{total !== 1 ? 's' : ''}
+          Live factory status � {total} active order{total !== 1 ? 's' : ''}
         </p>
       </div>
 

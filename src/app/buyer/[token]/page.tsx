@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
+import { connection } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { BuyerPortalView } from '@/components/buyer/buyer-portal-view'
 import type { Metadata } from 'next'
 import { hashToken } from '@/lib/token-utils'
 
 // This page is dynamic — it accesses cookies and runtime params
-export const instant = false
+// Force dynamic rendering — prevent Partial Prerender of auth-gated pages
 
 interface Props {
   params: Promise<{ token: string }>
@@ -16,9 +17,12 @@ export const metadata: Metadata = {
   description: 'Secure buyer-only view of your production orders',
 }
 
+export const instant = false
+
 export default async function BuyerPortalPage({ params }: Props) {
   const { token } = await params
   const supabase = await createClient()
+  await connection()
 
   // Hash the token before looking it up
   const tokenHash = await hashToken(token)

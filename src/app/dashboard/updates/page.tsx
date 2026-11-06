@@ -1,14 +1,21 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+
 import { UpdateHistoryList } from '@/components/orders/update-history-list'
+
 import { AIReviewPanel } from '@/components/ai/ai-review-panel'
 
+
 export const metadata: Metadata = { title: 'Production Updates' }
+
 
 export const instant = false
 
 export default async function UpdatesPage() {
   const supabase = await createClient()
+  await connection()
 
   const [updatesResult, reviewResult] = await Promise.all([
     supabase
