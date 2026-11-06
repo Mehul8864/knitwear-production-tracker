@@ -2,11 +2,11 @@
 
 import { RiskBadge, StageBadge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { formatDate, percentage, formatNumber } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Globe, Package, Calendar, CheckCircle2, Circle, ArrowRight, Clock } from 'lucide-react'
+import { Globe, Package, Calendar, CheckCircle2, Circle, ArrowRight } from 'lucide-react'
 import type { OrderMilestone } from '@/types/database'
 import { BuyerSecurePhoto } from '@/components/photos/buyer-secure-photo'
 

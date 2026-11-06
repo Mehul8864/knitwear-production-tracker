@@ -27,7 +27,8 @@ const STAGE_LABELS: Record<string, string> = {
 }
 
 export function RunRatePanel({ order, milestones, updates }: RunRatePanelProps) {
-  const referenceDate = new Date()
+  // Stabilise referenceDate so it doesn't rebuild useMemo on every render
+  const referenceDate = useMemo(() => new Date(), [])
 
   const milestoneResults = useMemo(() => {
     return milestones.map((m) => {

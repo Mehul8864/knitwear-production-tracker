@@ -14,14 +14,14 @@ function getDB(): OfflineQueueDB {
 }
 
 export function useOfflineQueue() {
-  const [isOnline, setIsOnline] = useState(true)
+  // Initialise from navigator.onLine directly to avoid a synchronous setState in useEffect
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? navigator.onLine : true
+  )
   const [pendingCount, setPendingCount] = useState(0)
   const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    // Initial state
-    setIsOnline(navigator.onLine)
-
     const handleOnline = () => {
       setIsOnline(true)
       syncPending()
@@ -31,13 +31,14 @@ export function useOfflineQueue() {
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
 
-    // Load pending count
+    // Load pending count on mount
     loadPendingCount()
 
     return () => {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadPendingCount() {

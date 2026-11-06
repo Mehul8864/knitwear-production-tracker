@@ -52,6 +52,10 @@ export function TNACalendarView({ milestones }: TNACalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
 
+  // Stable reference to "now" — use useState lazy initializer since
+  // Date.now() cannot be called inside render per React Compiler rules.
+  const [nowMs] = useState<number>(() => Date.now())
+
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth)
     const end = endOfMonth(currentMonth)
@@ -235,7 +239,7 @@ export function TNACalendarView({ milestones }: TNACalendarViewProps) {
             <div className="space-y-2">
               {upcomingMilestones.map((m) => {
                 const daysLeft = Math.ceil(
-                  (new Date(m.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                  (new Date(m.target_date).getTime() - nowMs) / (1000 * 60 * 60 * 24)
                 )
                 return (
                   <Link

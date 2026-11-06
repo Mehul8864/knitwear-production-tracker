@@ -22,6 +22,17 @@ import { cn } from '@/lib/utils'
 type SortField = 'ex_factory_date' | 'risk_status' | 'po_number' | 'completed_quantity'
 type SortDir = 'asc' | 'desc'
 
+// Defined outside the component to avoid creating components during render
+function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: SortDir }) {
+  if (sortField !== field)
+    return <ChevronUp className="h-3.5 w-3.5 opacity-30" />
+  return sortDir === 'asc' ? (
+    <ChevronUp className="h-3.5 w-3.5 text-[var(--accent)]" />
+  ) : (
+    <ChevronDown className="h-3.5 w-3.5 text-[var(--accent)]" />
+  )
+}
+
 const riskOrder = { RED: 0, AMBER: 1, GREEN: 2 }
 
 interface OrderBoardProps {
@@ -95,16 +106,6 @@ export function OrderBoard({ initialOrders, buyers, units }: OrderBoardProps) {
 
   const totalPages = Math.ceil(filtered.length / pageSize)
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize)
-
-  function SortIcon({ field }: { field: SortField }) {
-    if (sortField !== field)
-      return <ChevronUp className="h-3.5 w-3.5 opacity-30" />
-    return sortDir === 'asc' ? (
-      <ChevronUp className="h-3.5 w-3.5 text-[var(--accent)]" />
-    ) : (
-      <ChevronDown className="h-3.5 w-3.5 text-[var(--accent)]" />
-    )
-  }
 
   return (
     <div className="space-y-4">
@@ -188,7 +189,7 @@ export function OrderBoard({ initialOrders, buyers, units }: OrderBoardProps) {
                   className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-[var(--text-primary)]"
                   onClick={() => handleSort('po_number')}
                 >
-                  <span className="flex items-center gap-1">PO Number <SortIcon field="po_number" /></span>
+                  <span className="flex items-center gap-1">PO Number <SortIcon field="po_number" sortField={sortField} sortDir={sortDir} /></span>
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">
                   Buyer
@@ -212,7 +213,7 @@ export function OrderBoard({ initialOrders, buyers, units }: OrderBoardProps) {
                   className="text-left px-4 py-3 text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-[var(--text-primary)]"
                   onClick={() => handleSort('ex_factory_date')}
                 >
-                  <span className="flex items-center gap-1">Ex-factory <SortIcon field="ex_factory_date" /></span>
+                  <span className="flex items-center gap-1">Ex-factory <SortIcon field="ex_factory_date" sortField={sortField} sortDir={sortDir} /></span>
                 </th>
                 <th className="w-10" />
               </tr>

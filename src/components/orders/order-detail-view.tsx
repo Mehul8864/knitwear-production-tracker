@@ -4,14 +4,14 @@ import Link from 'next/link'
 import { ArrowLeft, Calendar, Factory, Package, TrendingUp } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { RiskBadge, StageBadge, Badge } from '@/components/ui/badge'
+import { RiskBadge, StageBadge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { RunRatePanel } from './run-rate-panel'
 import { TNATimeline } from './tna-timeline'
 import { UpdateHistoryList } from './update-history-list'
 import { ColourSizeMatrix } from './colour-size-matrix'
 import { DateChangeHistory } from './date-change-history'
-import { formatDate, formatDateTime, percentage, formatNumber } from '@/lib/utils'
+import { formatDate, percentage, formatNumber } from '@/lib/utils'
 import type {
   Order,
   OrderMilestone,

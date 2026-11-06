@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { percentage, daysUntil, formatNumber, truncate } from './utils'
+import { percentage, formatNumber, truncate } from './utils'
 
 describe('percentage', () => {
   it('calculates correct percentage', () => {

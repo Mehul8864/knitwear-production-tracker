@@ -9,11 +9,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import type { Order, ProductionUpdate } from '@/types/database'
-import { formatDate } from '@/lib/utils'
 
 interface ProductionTrendChartProps {
   orders: Order[]

@@ -102,7 +102,7 @@ export function TNATimeline({ orderId, milestones }: TNATimelineProps) {
             <div className="absolute left-[11px] top-4 bottom-4 w-0.5 bg-[var(--border)]" />
 
             <div className="space-y-0">
-              {milestones.map((m, i) => {
+              {milestones.map((m) => {
                 const targetDate = new Date(m.target_date)
                 targetDate.setHours(0, 0, 0, 0)
                 const isComplete = !!m.completed_date
