@@ -1,12 +1,11 @@
 'use client'
 
 import { RiskBadge, StageBadge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { formatDate, percentage, formatNumber } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Globe, Package, Calendar, CheckCircle2, Circle, ArrowRight } from 'lucide-react'
+import { Globe, Package, TrendingUp, CheckCircle2, Circle, ArrowRight, Clock } from 'lucide-react'
 import type { OrderMilestone } from '@/types/database'
 import { BuyerSecurePhoto } from '@/components/photos/buyer-secure-photo'
 
@@ -39,15 +38,9 @@ interface BuyerDateHistory {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  fabric_inhouse: 'Fabric In-house',
-  cutting: 'Cutting',
-  stitching: 'Stitching',
-  printing: 'Printing',
-  washing: 'Washing',
-  finishing: 'Finishing',
-  packing: 'Packing',
-  final_inspection: 'Final Inspection',
-  dispatch: 'Dispatch',
+  fabric_inhouse: 'Fabric In-house', cutting: 'Cutting', stitching: 'Stitching',
+  printing: 'Printing', washing: 'Washing', finishing: 'Finishing',
+  packing: 'Packing', final_inspection: 'Final Inspection', dispatch: 'Dispatch',
 }
 
 interface BuyerPortalViewProps {
@@ -59,233 +52,251 @@ interface BuyerPortalViewProps {
   buyerToken: string
 }
 
-export function BuyerPortalView({
-  buyer,
-  orders,
-  milestones,
-  updates,
-  dateHistory,
-  buyerToken,
-}: BuyerPortalViewProps) {
-  const totalQty = orders.reduce((s, o) => s + o.total_quantity, 0)
+export function BuyerPortalView({ buyer, orders, milestones, updates, dateHistory, buyerToken }: BuyerPortalViewProps) {
+  const totalQty       = orders.reduce((s, o) => s + o.total_quantity, 0)
   const totalCompleted = orders.reduce((s, o) => s + o.completed_quantity, 0)
-  const onTrack = orders.filter((o) => o.risk_status === 'GREEN').length
+  const onTrack        = orders.filter(o => o.risk_status === 'GREEN').length
+  const overallPct     = percentage(totalCompleted, totalQty)
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)]">
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       {/* Header */}
-      <header className="border-b border-[var(--border)] bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header
+        className="sticky top-0 z-20"
+        style={{ background: 'var(--navy)', boxShadow: '0 1px 0 rgba(255,255,255,0.08)' }}
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+          {/* Brand */}
+          <div className="flex items-center gap-2.5">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'var(--navy)' }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}
             >
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 2L3 7v11h5v-6h4v6h5V7L10 2z" fill="white" />
               </svg>
             </div>
-            <div>
-              <span className="font-semibold text-[var(--text-primary)] text-sm">StitchOps</span>
-              <p className="text-xs text-[var(--text-muted)]">Buyer Production Portal</p>
-            </div>
+            <span className="font-semibold text-white text-[13.5px] tracking-[-0.01em]">StitchOps</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-            <Globe className="h-4 w-4" />
-            <span>{buyer?.name} · {buyer?.country}</span>
+
+          <div className="h-4 w-px mx-1" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <span className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.55)' }}>Production Portal</span>
+
+          <div className="ml-auto flex items-center gap-2">
+            <Globe className="h-3.5 w-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.5)' }} />
+            <span className="text-[12.5px] font-medium text-white">{buyer?.name}</span>
+            <span className="text-[12px]" style={{ color: 'rgba(255,255,255,0.45)' }}>{buyer?.country}</span>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Welcome */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-7 space-y-6 animate-fade-up">
+        {/* Overview */}
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
+          <h1
+            className="text-[22px] font-bold tracking-[-0.02em]"
+            style={{ color: 'var(--text-primary)' }}
+          >
             Production Status
           </h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
-            Live view of your orders as of {formatDate(new Date())}
+          <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+            As of {formatDate(new Date())} · {orders.length} active order{orders.length !== 1 ? 's' : ''}
           </p>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Summary strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Active Orders', value: orders.length, icon: <Package className="h-4 w-4" /> },
-            { label: 'On Track', value: onTrack, icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" /> },
-            { label: 'Total Ordered', value: `${formatNumber(totalQty)} pcs`, icon: <Package className="h-4 w-4" /> },
-            {
-              label: 'Overall Progress',
-              value: `${percentage(totalCompleted, totalQty)}%`,
-              icon: <Calendar className="h-4 w-4" />,
-            },
-          ].map((item) => (
-            <Card key={item.label}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-medium">
-                    {item.label}
-                  </p>
-                  <span className="text-[var(--text-muted)]">{item.icon}</span>
-                </div>
-                <p className="text-xl font-bold text-[var(--text-primary)]">{item.value}</p>
-              </CardContent>
-            </Card>
+            { label: 'Active Orders',   value: String(orders.length),              icon: <Package className="h-3.5 w-3.5" /> },
+            { label: 'On Track',        value: String(onTrack),                    icon: <CheckCircle2 className="h-3.5 w-3.5" style={{ color: 'var(--green)' }} /> },
+            { label: 'Total Ordered',   value: `${formatNumber(totalQty)} pcs`,    icon: <Package className="h-3.5 w-3.5" /> },
+            { label: 'Overall Progress',value: `${overallPct}%`,                   icon: <TrendingUp className="h-3.5 w-3.5" /> },
+          ].map(item => (
+            <div
+              key={item.label}
+              className="bg-white rounded-[var(--radius-lg)] border border-[var(--border)] p-4"
+              style={{ boxShadow: 'var(--shadow-sm)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-label-caps">{item.label}</p>
+                <span style={{ color: 'var(--text-muted)' }}>{item.icon}</span>
+              </div>
+              <p className="text-[20px] font-bold tracking-[-0.02em]" style={{ color: 'var(--text-primary)' }}>
+                {item.value}
+              </p>
+            </div>
           ))}
         </div>
 
         {/* Orders */}
         {orders.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <p className="text-sm font-medium text-[var(--text-primary)]">No active orders</p>
-              <p className="text-xs text-[var(--text-muted)] mt-1">
-                Your orders will appear here once they are created
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--border)] p-16 text-center" style={{ boxShadow: 'var(--shadow-sm)' }}>
+            <p className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>No active orders</p>
+            <p className="text-[12.5px] mt-1" style={{ color: 'var(--text-muted)' }}>Your orders will appear here once created</p>
+          </div>
         ) : (
-          <div className="space-y-5">
-            {orders.map((order) => {
-              const pct = percentage(order.completed_quantity, order.total_quantity)
-              const orderMilestones = milestones.filter((m) => m.order_id === order.id)
-              const orderUpdates = updates.filter((u) => u.order_id === order.id)
-              const orderHistory = dateHistory.filter((h) => h.order_id === order.id)
-              const photos = orderUpdates.flatMap((u) => u.photo_urls ?? []).slice(0, 6)
+          <div className="space-y-4">
+            {orders.map(order => {
+              const pct            = percentage(order.completed_quantity, order.total_quantity)
+              const orderMilestone = milestones.filter(m => m.order_id === order.id)
+              const orderUpdates   = updates.filter(u => u.order_id === order.id)
+              const orderHistory   = dateHistory.filter(h => h.order_id === order.id)
+              const photos         = orderUpdates.flatMap(u => u.photo_urls ?? []).slice(0, 6)
+              const progressColor  = order.risk_status === 'GREEN' ? 'var(--green)' :
+                                     order.risk_status === 'AMBER' ? 'var(--amber)' : 'var(--red)'
 
               return (
-                <Card key={order.id}>
-                  <CardContent className="p-5">
-                    <Tabs defaultValue="overview">
-                      {/* Order header */}
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h2 className="text-lg font-bold text-[var(--text-primary)]">
-                              {order.po_number}
-                            </h2>
-                            <RiskBadge status={order.risk_status} />
-                          </div>
-                          <p className="text-sm text-[var(--text-muted)]">
-                            {order.style_name} · Ex-factory {formatDate(order.ex_factory_date)}
-                          </p>
+                <div
+                  key={order.id}
+                  className="bg-white rounded-[var(--radius-xl)] border border-[var(--border)]"
+                  style={{ boxShadow: 'var(--shadow-md)' }}
+                >
+                  {/* Order header */}
+                  <div
+                    className="px-5 py-4"
+                    style={{ borderBottom: '1px solid var(--border-light)' }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2.5 mb-1">
+                          <h2 className="text-[17px] font-bold tracking-[-0.018em]" style={{ color: 'var(--text-primary)' }}>
+                            {order.po_number}
+                          </h2>
+                          <RiskBadge status={order.risk_status} />
                         </div>
-                        <StageBadge stage={order.current_stage} />
-                      </div>
-
-                      {/* Progress */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-[var(--text-secondary)]">Production Progress</span>
-                          <span className="font-bold text-[var(--text-primary)]">
-                            {pct}% · {formatNumber(order.completed_quantity)} / {formatNumber(order.total_quantity)} pcs
-                          </span>
-                        </div>
-                        <Progress
-                          value={pct}
-                          className="h-2"
-                          indicatorClassName={cn(
-                            order.risk_status === 'GREEN' && 'bg-emerald-500',
-                            order.risk_status === 'AMBER' && 'bg-amber-500',
-                            order.risk_status === 'RED' && 'bg-red-500',
+                        <p className="text-[12.5px]" style={{ color: 'var(--text-muted)' }}>
+                          {order.style_name}
+                          {order.production_unit && (
+                            <span> · {(order.production_unit as { name: string }).name}</span>
                           )}
-                        />
+                        </p>
                       </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[12px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                          Ex-factory
+                        </p>
+                        <p className="text-[13px] font-bold" style={{ color: 'var(--text-primary)' }}>
+                          {formatDate(order.ex_factory_date)}
+                        </p>
+                      </div>
+                    </div>
 
-                      <TabsList className="mb-4">
-                        <TabsTrigger value="overview">Timeline</TabsTrigger>
-                        <TabsTrigger value="photos">Photos ({photos.length})</TabsTrigger>
-                        {orderHistory.length > 0 && (
-                          <TabsTrigger value="changes">Date Changes</TabsTrigger>
-                        )}
-                      </TabsList>
+                    {/* Progress bar */}
+                    <div className="mt-3.5">
+                      <div className="flex items-center justify-between text-[12px] mb-1.5">
+                        <span style={{ color: 'var(--text-secondary)' }}>Production progress</span>
+                        <span className="font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                          {pct}% · {formatNumber(order.completed_quantity)} / {formatNumber(order.total_quantity)} pcs
+                        </span>
+                      </div>
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width: `${pct}%`, background: progressColor }} />
+                      </div>
+                    </div>
+                  </div>
 
-                      <TabsContent value="overview">
-                        {orderMilestones.length === 0 ? (
-                          <p className="text-sm text-[var(--text-muted)]">No milestones defined</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {orderMilestones.map((m) => {
-                              const isComplete = !!m.completed_date
-                              const isPast = new Date(m.target_date) < new Date() && !isComplete
-                              return (
-                                <div
-                                  key={m.id}
-                                  className={cn(
-                                    'flex items-center gap-3 p-2.5 rounded-xl',
-                                    m.is_active && 'bg-[var(--accent-light)]'
-                                  )}
+                  {/* Tabs */}
+                  <Tabs defaultValue="timeline" className="p-5 pt-4">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                      <TabsTrigger value="photos">Photos {photos.length > 0 && `(${photos.length})`}</TabsTrigger>
+                      {orderHistory.length > 0 && (
+                        <TabsTrigger value="changes">Date Changes ({orderHistory.length})</TabsTrigger>
+                      )}
+                    </TabsList>
+
+                    <TabsContent value="timeline">
+                      {orderMilestone.length === 0 ? (
+                        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No milestones defined</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {orderMilestone.map(m => {
+                            const isComplete = !!m.completed_date
+                            const isPast = new Date(m.target_date) < new Date() && !isComplete
+                            return (
+                              <div
+                                key={m.id}
+                                className={cn(
+                                  'flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)]',
+                                  m.is_active ? 'bg-[var(--accent-light)]' : ''
+                                )}
+                              >
+                                {isComplete
+                                  ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--green)' }} />
+                                  : <Circle className={cn('h-3.5 w-3.5 shrink-0', isPast ? 'text-[var(--red)]' : 'text-[var(--border-strong)]')} />
+                                }
+                                <span
+                                  className={cn('text-[13px]', isComplete ? 'line-through' : '')}
+                                  style={{ color: isComplete ? 'var(--text-muted)' : 'var(--text-secondary)' }}
                                 >
-                                  {isComplete ? (
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                  ) : (
-                                    <Circle className={cn('h-4 w-4 shrink-0', isPast ? 'text-red-400' : 'text-[var(--border-strong)]')} />
-                                  )}
-                                  <span className={cn('text-sm', isComplete ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-secondary)]')}>
-                                    {STAGE_LABELS[m.stage] ?? m.name}
-                                  </span>
-                                  <span className={cn('text-xs ml-auto', isPast && !isComplete ? 'text-red-600 font-medium' : 'text-[var(--text-muted)]')}>
-                                    {formatDate(m.target_date)}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="photos">
-                        {photos.length === 0 ? (
-                          <p className="text-sm text-[var(--text-muted)]">No photos yet</p>
-                        ) : (
-                          <div className="grid grid-cols-3 gap-2">
-                            {photos.map((photoPath, i) => (
-                              <BuyerSecurePhoto
-                                key={i}
-                                src={photoPath}
-                                token={buyerToken}
-                                alt={`Production photo ${i + 1}`}
-                                className="w-full aspect-square object-cover rounded-xl border border-[var(--border)]"
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="changes">
-                        <div className="space-y-2">
-                          {orderHistory.map((h, i) => (
-                            <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-[var(--bg-subtle)]">
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="line-through text-[var(--text-muted)]">
-                                  {formatDate(h.previous_date)}
+                                  {STAGE_LABELS[m.stage] ?? m.name}
                                 </span>
-                                <ArrowRight className="h-3 w-3 text-[var(--text-muted)]" />
-                                <span className="font-medium text-[var(--text-primary)]">
-                                  {formatDate(h.new_date)}
+                                <span
+                                  className={cn('text-[12px] ml-auto', isPast && !isComplete ? 'font-medium' : '')}
+                                  style={{ color: isPast && !isComplete ? 'var(--red-text)' : 'var(--text-muted)' }}
+                                >
+                                  {formatDate(m.target_date)}
                                 </span>
                               </div>
-                              <span className="text-xs text-[var(--text-muted)] ml-auto">
-                                {formatDate(h.changed_at)}
-                              </span>
-                            </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="photos">
+                      {photos.length === 0 ? (
+                        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No production photos yet</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {photos.map((photoPath, i) => (
+                            <BuyerSecurePhoto
+                              key={i}
+                              src={photoPath}
+                              token={buyerToken}
+                              alt={`Production photo ${i + 1}`}
+                              className="w-full aspect-square object-cover rounded-[var(--radius-md)] border border-[var(--border)]"
+                            />
                           ))}
                         </div>
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="changes">
+                      <div className="space-y-2">
+                        {orderHistory.map((h, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-3 px-3.5 py-2.5 rounded-[var(--radius-md)]"
+                            style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)' }}
+                          >
+                            <div className="flex items-center gap-2 text-[12.5px] flex-1 min-w-0">
+                              <span className="line-through" style={{ color: 'var(--text-muted)' }}>{formatDate(h.previous_date)}</span>
+                              <ArrowRight className="h-3 w-3 shrink-0" style={{ color: 'var(--text-muted)' }} />
+                              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatDate(h.new_date)}</span>
+                            </div>
+                            <span className="text-[11.5px] shrink-0" style={{ color: 'var(--text-muted)' }}>{formatDate(h.changed_at)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
               )
             })}
           </div>
         )}
 
         {/* Footer */}
-        <div className="text-center py-8 border-t border-[var(--border)]">
-          <p className="text-xs text-[var(--text-muted)]">
-            Secured by StitchOps · Read-only buyer view · Data shown: {buyer?.name} orders only
+        <div
+          className="text-center py-8"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <p className="text-[12px]" style={{ color: 'var(--text-faint)' }}>
+            Secured by StitchOps · Read-only buyer view · {buyer?.name} orders only
           </p>
-          <p className="text-xs text-[var(--text-muted)] mt-1">
+          <p className="text-[11.5px] mt-0.5" style={{ color: 'var(--text-faint)' }}>
+            <Clock className="h-3 w-3 inline mr-1" />
             Last updated: {formatDate(new Date())}
           </p>
         </div>
