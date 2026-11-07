@@ -227,6 +227,8 @@ The seeded buyer tokens were generated with `http://localhost:3000`. After Verce
 3. Click **Generate Link** for each buyer
 4. Share the new links — they use `NEXT_PUBLIC_APP_URL` (your Vercel domain)
 
+Buyers access the portal via `/buyer/<token>` directly — they do not use the email/password login form. The `/buyer-portal` page at the root is an informational page that explains this and contains a "Sign in here" link for merchandisers and supervisors who land there by mistake.
+
 ---
 
 ## 14. AI Configuration
@@ -257,6 +259,14 @@ Password for all accounts: `Demo@2026!`
 ### Dashboard shows 0 production updates
 
 This is caused by PostgREST PGRST201 (ambiguous FK join). The fix is already applied — all queries use `supervisor:profiles!production_updates_supervisor_id_fkey(full_name)`. If this recurs, check that the FK hint is present.
+
+### Buyer portal: "Sign in here" redirect loop
+
+If clicking "Sign in here" on the `/buyer-portal` page loops back to the buyer portal instead of showing the login form, the `SignInLink` client component may not have signed out the current session. This component signs out before navigating to `/login`. If the issue recurs, clear browser cookies and navigate to `/login` directly.
+
+### Buyer portal: "Sign in here" not working
+
+The "Sign in here" link is a client-side JavaScript component. If JavaScript is disabled, the fallback `href="/login"` still works for unauthenticated visitors. For authenticated buyers, JavaScript must be enabled to trigger the sign-out before navigation.
 
 ### Vercel build: "Math.random() while prerendering" or "fetch() rejects"
 

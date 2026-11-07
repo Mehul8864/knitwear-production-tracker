@@ -211,6 +211,28 @@ tna_templates ─── tna_template_milestones
 - Buyers access via cryptographic tokens — never use email/password login for the portal
 - Client-supplied role values are never trusted
 
+### Buyer Portal Navigation and Redirect Logic
+
+The buyer portal uses token-scoped URLs (`/buyer/<token>`) that require no Supabase session. The `/buyer-portal` route is a public informational page.
+
+**Proxy (middleware) public routes:** `/login`, `/buyer`, `/buyer-portal`
+
+**Full routing behaviour:**
+
+| Scenario | Path | Outcome |
+|----------|------|---------|
+| Unauthenticated → any `/buyer/token` | `/buyer/<token>` | Token validated server-side; renders portal or 404 |
+| Unauthenticated → `/buyer-portal` | `/buyer-portal` | Proxy passes; informational page shown |
+| Authenticated Buyer → `/dashboard` | `/dashboard` | Layout: role=buyer → redirect to `/buyer-portal` |
+| Merchandiser/Supervisor → `/dashboard` | `/dashboard` | Layout: renders dashboard |
+| Authenticated → `/login` | `/login` | Proxy: redirects to `/dashboard` |
+
+**"Sign in here" link:** The `/buyer-portal` informational page contains a link for internal users. It is implemented as a **Client Component (`SignInLink`)** that:
+1. Calls `supabase.auth.signOut()` if the user is authenticated
+2. Then navigates to `/login`
+
+This sign-out step is required because the proxy redirects any authenticated user from `/login` to `/dashboard`. Without it, an authenticated buyer clicking "Sign in here" would loop: `/login` → `/dashboard` → `/buyer-portal` → `/login` → ... indefinitely.
+
 ---
 
 ## 11. Order Management Flow
@@ -559,9 +581,21 @@ src/lib/dashboard-aggregation.test.ts — 13 tests
   ✓ PGRST201 FK hint regression — 4 tests assert the
     explicit FK hint is present in all query select strings
   ✓ Real seeded diagnostic values verified (7,691 pcs total)
+
+src/lib/buyer-portal-routing.test.ts — 44 tests
+  ✓ Proxy public routes (/buyer-portal, /buyer, /login accessible)
+  ✓ /dashboard correctly protected (unauthenticated → /login)
+  ✓ Dashboard layout routing by role (merchandiser, supervisor, buyer)
+  ✓ Buyer portal page renders informational UI — no redirects
+  ✓ Redirect loop regression (7 full-path simulations)
+  ✓ Token-based buyer access (Company B and C token paths)
+  ✓ "Sign in here" link: signs out authenticated buyers before /login
+  ✓ Post-sign-in routing for all 3 roles
+  ✓ Buyer data isolation architecture (token validation, API routes)
+  ✓ Full scenario regression: "Sign in here" from /buyer-portal, no loop
 ```
 
-**Final test results: 84/84 pass**
+**Final test results: 128/128 pass**
 **ESLint: 0 errors, 10 informational warnings (RHF compiler note, blob URL img)**
 **Production build: passes cleanly (npm run build exits 0)**
 
@@ -587,6 +621,16 @@ Fix: Added `await connection()` from `next/server` BEFORE `createClient()` in al
 `upcoming-deadlines.tsx` was a Server Component passing `onMouseEnter`/`onMouseLeave` functions to a `<Link>` (Client Component). Next.js cannot serialize function props across the boundary.
 
 Fix: Replaced JavaScript event handlers with a CSS `hover:bg-[var(--bg-subtle)]` Tailwind class.
+
+**Bug 4: Buyer Portal ↔ Dashboard redirect loop**
+
+When a buyer account navigated to `/dashboard`, the layout redirected to `/buyer-portal`. The `/buyer-portal` page then redirected back to `/login`. The proxy, seeing an authenticated user at `/login`, redirected back to `/dashboard` — creating an infinite loop.
+
+Two changes fixed this:
+1. Added `/buyer-portal` to the proxy's public routes list (it was missing)
+2. Replaced the redirect logic in `/buyer-portal/page.tsx` with a static informational UI
+
+Remaining issue after those fixes: the "Sign in here" link on `/buyer-portal` caused the same loop for authenticated buyers (clicking the link navigated to `/login`, proxy sent them back to `/dashboard`). Fix: the link is now a **Client Component (`SignInLink`)** that calls `supabase.auth.signOut()` before navigating to `/login`, so the proxy allows the unauthenticated user through.
 
 ### Live Testing Results (Supabase: kxhwpjsdqdxuvpisefmj)
 
