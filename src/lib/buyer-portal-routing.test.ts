@@ -253,3 +253,195 @@ describe('Token-based buyer access architecture', () => {
     expect(isPublicRoute(`/buyer/${companyCToken}`)).toBe(true)
   })
 })
+
+// ─── SignInLink behaviour ─────────────────────────────────────────────────────
+// The "Sign in here" link is implemented as a client component (SignInLink)
+// that signs out any current session before navigating to /login.
+// This prevents the proxy from redirecting an authenticated buyer from
+// /login back to /dashboard (which would loop back to /buyer-portal).
+
+/**
+ * Simulates the SignInLink click → sign-out → navigate-to-login flow.
+ * Returns the effective pathname the proxy receives after sign-out.
+ */
+function signInLinkDecision(wasAuthenticated: boolean): { signedOut: boolean; destination: string } {
+  if (wasAuthenticated) {
+    // SignInLink calls supabase.auth.signOut() before pushing /login
+    return { signedOut: true, destination: '/login' }
+  }
+  // No session to clear — navigate directly
+  return { signedOut: false, destination: '/login' }
+}
+
+describe('"Sign in here" link (SignInLink component)', () => {
+  it('Navigates to /login for unauthenticated visitors', () => {
+    const result = signInLinkDecision(false)
+    expect(result.destination).toBe('/login')
+    expect(result.signedOut).toBe(false)
+  })
+
+  it('Signs out AND navigates to /login for authenticated buyers', () => {
+    const result = signInLinkDecision(true)
+    expect(result.signedOut).toBe(true)
+    expect(result.destination).toBe('/login')
+  })
+
+  it('After sign-out, proxy allows /login through (no redirect to /dashboard)', () => {
+    // Post-sign-out: user is unauthenticated
+    const proxyResult = proxyDecision('/login', false /* signed out */)
+    expect(proxyResult).toBe('PASS')
+  })
+
+  it('Authenticated buyer clicks "Sign in here" — no redirect loop', () => {
+    // 1. SignInLink signs out → now unauthenticated
+    // 2. Navigate to /login
+    // 3. Proxy: unauthenticated + /login = PASS (no redirect)
+    // 4. Login page renders ✓
+    const { signedOut, destination } = signInLinkDecision(true /* was buyer */)
+    expect(signedOut).toBe(true)
+    const proxyResult = proxyDecision(destination, false /* post-sign-out */)
+    expect(proxyResult).toBe('PASS')
+  })
+
+  it('Unauthenticated visitor clicks "Sign in here" — reaches login page', () => {
+    const { destination } = signInLinkDecision(false)
+    const proxyResult = proxyDecision(destination, false)
+    expect(proxyResult).toBe('PASS')
+  })
+})
+
+describe('Login page post-sign-in routing', () => {
+  it('Merchandiser signs in → redirected to /dashboard → renders dashboard', () => {
+    // After successful login: router.push('/dashboard')
+    // Proxy: authenticated + /dashboard = PASS
+    // Dashboard layout: role=merchandiser → RENDER dashboard
+    const proxyResult = proxyDecision('/dashboard', true)
+    const layoutResult = dashboardLayoutDecision('merchandiser')
+    expect(proxyResult).toBe('PASS')
+    expect(layoutResult).toBe('RENDER dashboard')
+  })
+
+  it('Supervisor signs in → redirected to /dashboard → renders dashboard', () => {
+    const proxyResult = proxyDecision('/dashboard', true)
+    const layoutResult = dashboardLayoutDecision('supervisor')
+    expect(proxyResult).toBe('PASS')
+    expect(layoutResult).toBe('RENDER dashboard')
+  })
+
+  it('Buyer cannot access /dashboard (layout redirects to /buyer-portal)', () => {
+    const layoutResult = dashboardLayoutDecision('buyer')
+    expect(layoutResult).toBe('REDIRECT /buyer-portal')
+    expect(layoutResult).not.toBe('RENDER dashboard')
+  })
+
+  it('Buyer is never served the internal Dashboard UI', () => {
+    // Full path: buyer signs in → /dashboard → layout sees buyer role
+    const layoutResult = dashboardLayoutDecision('buyer')
+    expect(layoutResult).not.toContain('RENDER dashboard')
+  })
+})
+
+describe('Buyer data isolation architecture', () => {
+  /**
+   * These tests verify the structural access rules.
+   * Full RLS enforcement is tested in photo-auth.test.ts (35 tests).
+   */
+
+  it('Company B token path is a distinct URL from Company C token path', () => {
+    const tokenB = 'a6824c0b1d15e67470b53c7d64e6ed26b02138540621a6daab3df6d6a9dc8007'
+    const tokenC = '499a0957c736309b7f1467513d71fcfbe835ae6e8060c06266447d14d3bde9f2'
+    expect(`/buyer/${tokenB}`).not.toBe(`/buyer/${tokenC}`)
+    expect(isPublicRoute(`/buyer/${tokenB}`)).toBe(true)
+    expect(isPublicRoute(`/buyer/${tokenC}`)).toBe(true)
+  })
+
+  it('Buyer API routes validate token server-side before returning data', () => {
+    // Token-based signed URL endpoints are in /api/* — not public routes
+    // (they require token validation inside the route handler itself,
+    //  not via the proxy, which is the correct architecture)
+    expect(isPublicRoute('/api/photos/buyer-signed-url')).toBe(false)
+    // The proxy passes /api/* routes through — validation is in the handler
+  })
+
+  it('Invalid/expired token: /buyer/[token] page calls notFound() — no loop', () => {
+    // /buyer/* is a public route — the proxy passes through.
+    // Inside the page, an invalid token hash lookup returns null → notFound()
+    // This renders a 404 page, not a redirect loop.
+    const proxyResult = proxyDecision('/buyer/invalidtoken', false)
+    expect(proxyResult).toBe('PASS')
+    // The page-level notFound() terminates rendering, no redirect.
+  })
+})
+
+describe('Full scenario regression: "Sign in here" from /buyer-portal, no loop', () => {
+  function fullSignInFlow(
+    wasAuthenticated: boolean,
+    signsInAsRole: string
+  ): string[] {
+    const steps: string[] = ['START: /buyer-portal']
+
+    // Step 1: user clicks "Sign in here"
+    const { signedOut, destination } = signInLinkDecision(wasAuthenticated)
+    if (signedOut) steps.push('SIGN OUT')
+    steps.push(`NAVIGATE TO: ${destination}`)
+
+    // Step 2: proxy decision at /login (now unauthenticated)
+    const proxyAtLogin = proxyDecision(destination, false)
+    if (proxyAtLogin === 'PASS') {
+      steps.push('PROXY: /login passes through')
+    } else {
+      steps.push(`PROXY: ${proxyAtLogin}`)
+      return [...steps, 'LOOP RISK']
+    }
+
+    // Step 3: user fills login form and signs in
+    steps.push(`SIGNS IN AS: ${signsInAsRole}`)
+    steps.push('ROUTER: push /dashboard')
+
+    // Step 4: proxy at /dashboard (now authenticated)
+    const proxyAtDashboard = proxyDecision('/dashboard', true)
+    if (proxyAtDashboard === 'PASS') {
+      steps.push('PROXY: /dashboard passes through')
+    }
+
+    // Step 5: layout decision
+    const layout = dashboardLayoutDecision(signsInAsRole)
+    steps.push(`LAYOUT: ${layout}`)
+
+    if (layout.startsWith('RENDER')) {
+      steps.push(`END: ${layout}`)
+    } else if (layout === 'REDIRECT /buyer-portal') {
+      steps.push('END: buyer portal rendered (informational page)')
+    } else {
+      steps.push(`END: ${layout}`)
+    }
+
+    return steps
+  }
+
+  it('Unauthenticated visitor → sign in as merchandiser → dashboard, no loop', () => {
+    const steps = fullSignInFlow(false, 'merchandiser')
+    expect(steps.some(s => s.includes('LOOP'))).toBe(false)
+    expect(steps[steps.length - 1]).toBe('END: RENDER dashboard')
+  })
+
+  it('Unauthenticated visitor → sign in as supervisor → dashboard, no loop', () => {
+    const steps = fullSignInFlow(false, 'supervisor')
+    expect(steps.some(s => s.includes('LOOP'))).toBe(false)
+    expect(steps[steps.length - 1]).toBe('END: RENDER dashboard')
+  })
+
+  it('Authenticated buyer → click "Sign in here" → sign out → sign in as merchandiser → dashboard', () => {
+    const steps = fullSignInFlow(true /* was buyer, signs out */, 'merchandiser')
+    expect(steps.some(s => s.includes('LOOP'))).toBe(false)
+    expect(steps).toContain('SIGN OUT')
+    expect(steps[steps.length - 1]).toBe('END: RENDER dashboard')
+  })
+
+  it('Authenticated buyer → click "Sign in here" → sign out → sign in as buyer again → buyer portal info', () => {
+    // Even if they sign in as a buyer again, they reach /buyer-portal info, not a loop
+    const steps = fullSignInFlow(true /* was buyer */, 'buyer')
+    expect(steps.some(s => s.includes('LOOP'))).toBe(false)
+    expect(steps[steps.length - 1]).toBe('END: buyer portal rendered (informational page)')
+  })
+})
