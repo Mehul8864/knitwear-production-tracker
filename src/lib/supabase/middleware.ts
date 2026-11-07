@@ -35,7 +35,10 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Public routes that don't require auth
-  const publicRoutes = ['/login', '/buyer']
+  // - /login: auth page
+  // - /buyer: token-based buyer portal (e.g. /buyer/[token])
+  // - /buyer-portal: informational page for buyers who land without a token
+  const publicRoutes = ['/login', '/buyer', '/buyer-portal']
   const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
   const isApiRoute = pathname.startsWith('/api/')
   const isStaticRoute = pathname.startsWith('/_next/') || pathname === '/favicon.ico'
@@ -48,6 +51,9 @@ export async function updateSession(request: NextRequest) {
 
   if (user && pathname === '/login') {
     const url = request.nextUrl.clone()
+    // Redirect to dashboard — the layout will send buyers to /buyer-portal
+    // if their role is 'buyer'. This avoids checking the role in the proxy
+    // (which would require an extra DB query in the hot path).
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
